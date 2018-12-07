@@ -33,6 +33,8 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
     glm::vec3 d_min(0., 0., 0.),
               d_max(0., 0., 0.);
 
+    bool has_uv = true;
+
     for (const auto &index : mesh.indices) {
         glm::vec3 p(attrib.vertices[3 * index.vertex_index + 0],
                     attrib.vertices[3 * index.vertex_index + 1],
@@ -54,8 +56,12 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
         vertices.push_back(attrib.normals[3 * index.normal_index + 1]);
         vertices.push_back(attrib.normals[3 * index.normal_index + 2]);
 
-        vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
-        vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
+        if (index.texcoord_index < 0) {
+            has_uv = false;
+        } else if (has_uv) {
+            vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
+            vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
+        }
 
         indices.push_back(indices.size());
     }
@@ -74,22 +80,28 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
     indices_.data(sizeof(uint32_t) * indices.size(), indices.data(),
                   GL_STATIC_DRAW);
 
+    size_t vertex_data_stride = 6 + (has_uv ? 2 : 0);
+    size_t texcoord_offset = 3;
+    size_t normal_offset = texcoord_offset + (has_uv ? 2 : 0);
+
     // bind input "position" to vertex locations (3 floats)
     gl::attrib_location position(0);
-    position.vertex_pointer(3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+    position.vertex_pointer(3, GL_FLOAT, GL_FALSE, vertex_data_stride * sizeof(GLfloat),
                             (void *)0);
     position.enable_vertex_array();
 
-    // bind input "texCoord" to vertex texture coordinates (2 floats)
-    gl::attrib_location texCoord(1);
-    texCoord.vertex_pointer(2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
-                            (void *)(3 * sizeof(GLfloat)));
-    texCoord.enable_vertex_array();
+    if (has_uv) {
+        // bind input "texCoord" to vertex texture coordinates (2 floats)
+        gl::attrib_location texCoord(1);
+        texCoord.vertex_pointer(2, GL_FLOAT, GL_FALSE, vertex_data_stride * sizeof(GLfloat),
+                                (void *)(texcoord_offset * sizeof(GLfloat)));
+        texCoord.enable_vertex_array();
+    }
 
     // bind input "normals" to vertex normals (3 floats)
     gl::attrib_location normals(2);
-    normals.vertex_pointer(3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
-                           (void *)(5 * sizeof(GLfloat)));
+    normals.vertex_pointer(3, GL_FLOAT, GL_FALSE, vertex_data_stride * sizeof(GLfloat),
+                           (void *)(normal_offset * sizeof(GLfloat)));
     normals.enable_vertex_array();
 
     // Unbind
