@@ -1,0 +1,44 @@
+cmake_minimum_required(VERSION 2.8)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+project(test-models LANGUAGES CXX)
+
+set(CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/libshadertoy/modules
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# Set CMake standard
+set(CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 14)
+
+# OpenGL libraries
+find_package(OpenGL REQUIRED)
+find_package(Epoxy REQUIRED)
+find_package(Glfw3 REQUIRED)
+
+# Boost
+find_package(Boost 1.58 REQUIRED COMPONENTS filesystem)
+
+# libshadertoy
+add_subdirectory(libshadertoy)
+
+# Directories
+set(INCLUDE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SHADERS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+
+# Download tiny_obj_loader
+file(DOWNLOAD https://raw.githubusercontent.com/syoyo/tinyobjloader/v1.0.6/tiny_obj_loader.h
+    ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.h
+    EXPECTED_HASH SHA256=740c4e262a6ac56940852671bbe3e5e162cba7325c59ef57f3d9efdba2c5244c)
+file(DOWNLOAD https://raw.githubusercontent.com/syoyo/tinyobjloader/v1.0.6/tiny_obj_loader.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc
+    EXPECTED_HASH SHA256=b27322737fbd97b615412efd404d20d4a9b0a6556cada15ca4b77c7447b38bd2)
+
+# Create viewer target
+file(GLOB VIEWER_SOURCES ${SRC_ROOT}/*.cpp)
+add_executable(viewer ${VIEWER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc)
+
+target_include_directories(viewer PRIVATE ${INCLUDE_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/ext)
+target_link_libraries(viewer PRIVATE shadertoy-static ${Glfw3_LIBRARY})
+target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
