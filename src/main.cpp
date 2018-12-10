@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Object dimensions: " << glm::to_string(dimensions) << std::endl;
             std::cout << "Object center: " << glm::to_string(center) << std::endl;
 
-            float scale = 1. / std::max(dimensions.x, std::max(dimensions.y, dimensions.z));
+            float scale = 1. / dimensions.z;
  
             // Set the context parameters (render size and some uniforms)
             ctx.render_size = rsize(width, height);
