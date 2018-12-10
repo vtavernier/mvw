@@ -26,20 +26,20 @@ namespace fs = boost::filesystem;
 typedef shader_inputs<eMVP> geometry_inputs_t;
 
 template<typename T>
-std::unique_ptr<geometry::basic_geometry> make_geometry_object(const std::string &path, glm::vec3 &bbox_min, glm::vec3 &bbox_max)
+std::unique_ptr<geometry::basic_geometry> make_geometry_object(const std::string &path, glm::vec3 &bbox_min, glm::vec3 &bbox_max, glm::dvec3 &centroid)
 {
     auto g = std::make_unique<T>(path);
     g->get_dimensions(bbox_min, bbox_max);
     return std::move(g);
 }
 
-std::unique_ptr<geometry::basic_geometry> make_geometry(const std::string &path, glm::vec3 &bbox_min, glm::vec3 &bbox_max) {
+std::unique_ptr<geometry::basic_geometry> make_geometry(const std::string &path, glm::vec3 &bbox_min, glm::vec3 &bbox_max, glm::dvec3 &centroid) {
     fs::path p(path);
     auto ext(p.extension());
     std::unique_ptr<geometry::basic_geometry> result;
 
     if (ext == ".obj") {
-        result = make_geometry_object<tiny_geometry>(path, bbox_min, bbox_max);
+        result = make_geometry_object<tiny_geometry>(path, bbox_min, bbox_max, centroid);
     } else {
         std::stringstream ss;
         ss << "Unsupported model type: " << ext;
@@ -95,7 +95,8 @@ int main(int argc, char *argv[]) {
             // Load geometry
             const char *geometry_path = argc == 1 ? "../models/mcguire/bunny/bunny.obj" : argv[1];
             glm::vec3 bbox_min, bbox_max;
-            std::shared_ptr<geometry::basic_geometry> geometry(make_geometry(geometry_path, bbox_min, bbox_max));
+            glm::dvec3 centroid;
+            std::shared_ptr<geometry::basic_geometry> geometry(make_geometry(geometry_path, bbox_min, bbox_max, centroid));
 
             glm::vec3 dimensions = bbox_max - bbox_min, center = (bbox_max + bbox_min) / 2.f;
             std::cout << "Object dimensions: " << glm::to_string(dimensions) << std::endl;

@@ -13,6 +13,7 @@ class tiny_geometry : public shadertoy::geometry::basic_geometry {
     size_t indices_size_;
     glm::vec3 bbox_min_;
     glm::vec3 bbox_max_;
+    glm::dvec3 bbox_centroid_;
 
    public:
     tiny_geometry(const std::string &geometry_path);
@@ -25,6 +26,8 @@ class tiny_geometry : public shadertoy::geometry::basic_geometry {
         bbox_min = bbox_min_;
         bbox_max = bbox_max_;
     }
+
+    inline glm::dvec3 get_centroid() const { return bbox_centroid_; }
 };
 
 #endif /* _TINY_GEOMETRY_HPP_ */

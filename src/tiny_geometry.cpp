@@ -32,6 +32,7 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
 
     glm::vec3 d_min(0., 0., 0.),
               d_max(0., 0., 0.);
+    glm::dvec3 d_centroid(0., 0., 0.);
 
     bool has_uv = true;
 
@@ -47,6 +48,8 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
         if (p.x > d_max.x) d_max.x = p.x;
         if (p.x > d_max.y) d_max.y = p.y;
         if (p.z > d_max.z) d_max.z = p.z;
+
+        d_centroid += p;
 
         vertices.push_back(p.x);
         vertices.push_back(p.y);
@@ -70,6 +73,7 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
 
     bbox_min_ = d_min;
     bbox_max_ = d_max;
+    bbox_centroid_ = d_centroid / static_cast<double>(vertices.size() / 8);
 
     vao_.bind();
     vertices_.bind(GL_ARRAY_BUFFER);
