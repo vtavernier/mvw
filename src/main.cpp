@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize window
-    int width = 640, height = 480;
+    int width = 1280, height = 960;
     GLFWwindow *window = glfwCreateWindow(
         width, height, "Test model viewer", nullptr, nullptr);
 
