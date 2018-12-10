@@ -15,7 +15,7 @@
 #include "ui.hpp"
 #include "uniforms.hpp"
 
-#include "tiny_geometry.hpp"
+#include "mvw/tiny_geometry.hpp"
 
 using shadertoy::gl::gl_call;
 using namespace shadertoy;

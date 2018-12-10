@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "tiny_geometry.hpp"
+#include "mvw/tiny_geometry.hpp"
 
 #include "tiny_obj_loader.h"
 

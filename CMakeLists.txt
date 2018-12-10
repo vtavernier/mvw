@@ -35,10 +35,19 @@ file(DOWNLOAD https://raw.githubusercontent.com/syoyo/tinyobjloader/v1.0.6/tiny_
     ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc
     EXPECTED_HASH SHA256=b27322737fbd97b615412efd404d20d4a9b0a6556cada15ca4b77c7447b38bd2)
 
+# Create viewer library (used for the viewer and for testing)
+file(GLOB MVW_SOURCES ${SRC_ROOT}/mvw/*.cpp)
+add_library(mvw ${MVW_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc)
+
+target_include_directories(mvw PUBLIC ${INCLUDE_ROOT})
+target_include_directories(mvw PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ext)
+target_link_libraries(mvw PUBLIC shadertoy-shared)
+target_compile_options(mvw PRIVATE -Wall;-Werror=return-type)
+
 # Create viewer target
 file(GLOB VIEWER_SOURCES ${SRC_ROOT}/*.cpp)
-add_executable(viewer ${VIEWER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc)
+add_executable(viewer ${VIEWER_SOURCES})
 
-target_include_directories(viewer PRIVATE ${INCLUDE_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/ext)
-target_link_libraries(viewer PRIVATE shadertoy-static ${Glfw3_LIBRARY})
+target_include_directories(viewer PRIVATE ${INCLUDE_ROOT})
+target_link_libraries(viewer PRIVATE mvw ${Glfw3_LIBRARY})
 target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
