@@ -60,11 +60,15 @@ int main(int argc, char *argv[]) {
             context.buffer_template().shader_inputs().emplace("geometry",
                                                               &extra_inputs);
 
-            // The default vertex shader is not sufficient, we replace it with
-            // our own
+            // The default vertex shader is not sufficient, we replace it with our own
             context.buffer_template()[GL_VERTEX_SHADER] =
                 compiler::shader_template::parse_file(
-                    "../shaders/20_vertex.glsl");
+                    "../shaders/vertex.glsl");
+
+            // Same for fragment shader
+            context.buffer_template()[GL_FRAGMENT_SHADER] =
+                compiler::shader_template::parse_file(
+                    "../shaders/fragment.glsl");
 
             // Force compilation of new template
             context.buffer_template().compile(GL_VERTEX_SHADER);
