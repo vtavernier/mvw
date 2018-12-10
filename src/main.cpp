@@ -18,9 +18,6 @@
 using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
-// We need a custom inputs type to pass the MVP matrix
-typedef shader_inputs<eMVP> geometry_inputs_t;
-
 namespace spd = spdlog;
 
 int main(int argc, char *argv[]) {
@@ -162,7 +159,9 @@ int main(int argc, char *argv[]) {
                     glm::vec3(0.f, 1.f, 0.f));
 
                 // Our ModelViewProjection : multiplication of our 3 matrices
-                extra_inputs.get<eMVP>() = Projection * View * Model;
+                extra_inputs.get<mModel>() = Model;
+                extra_inputs.get<mView>() = View;
+                extra_inputs.get<mProj>() = Projection;
 
                 // Render the swap chain
                 context.render(chain);

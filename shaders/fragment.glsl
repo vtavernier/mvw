@@ -7,6 +7,10 @@ precision highp int;
 precision highp sampler2D;
 
 in vec2 vtexCoord;
+in vec3 vNormal;
+in vec3 vWorldNormal;
+in vec3 vPosition;
+
 out vec4 fragColor;
 
 #pragma shadertoy part *:defines
@@ -17,6 +21,6 @@ out vec4 fragColor;
 #pragma shadertoy part buffer:sources
 
 void main(void) {
-	fragColor = vec4(0., 0., 0., 1.);
-	mainImage(fragColor, vtexCoord.xy * iResolution.xy);
+    fragColor = vec4(0., 0., 0., 1.);
+    mainImage(fragColor, vtexCoord.xy * iResolution.xy);
 }
