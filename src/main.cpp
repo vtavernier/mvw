@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
             // Without a background, the buffer should also clear the previous
             // contents
-            imageBuffer->clear_color({.5f, .0f, .5f, 1.f});
+            imageBuffer->clear_color({.15f, .15f, .15f, 1.f});
             imageBuffer->clear_depth(1.f);
             imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
