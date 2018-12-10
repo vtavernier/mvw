@@ -10,7 +10,7 @@ using namespace shadertoy;
 using shadertoy::gl::gl_call;
 
 tiny_geometry::tiny_geometry(const std::string &geometry_path)
-    : basic_geometry() {
+    : mvw_geometry() {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -112,9 +112,4 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
     vao_.unbind();
     indices_.unbind(GL_ELEMENT_ARRAY_BUFFER);
     vertices_.unbind(GL_ARRAY_BUFFER);
-}
-
-void tiny_geometry::draw() const {
-    gl_call(glDrawElements, GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT,
-            nullptr);
 }

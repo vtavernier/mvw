@@ -40,8 +40,8 @@ file(GLOB MVW_SOURCES ${SRC_ROOT}/mvw/*.cpp)
 add_library(mvw ${MVW_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc)
 
 target_include_directories(mvw PUBLIC ${INCLUDE_ROOT})
-target_include_directories(mvw PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ext)
-target_link_libraries(mvw PUBLIC shadertoy-shared)
+target_include_directories(mvw PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ext ${Boost_INCLUDE_DIRS})
+target_link_libraries(mvw PUBLIC shadertoy-shared ${Boost_filesystem_LIBRARY})
 target_compile_options(mvw PRIVATE -Wall;-Werror=return-type)
 
 # Create viewer target

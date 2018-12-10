@@ -10,45 +10,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include <boost/filesystem.hpp>
-
 #include "ui.hpp"
 #include "uniforms.hpp"
 
-#include "mvw/tiny_geometry.hpp"
+#include "mvw/geometry.hpp"
 
 using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
-namespace fs = boost::filesystem;
-
 // We need a custom inputs type to pass the MVP matrix
 typedef shader_inputs<eMVP> geometry_inputs_t;
-
-template<typename T>
-std::unique_ptr<geometry::basic_geometry> make_geometry_object(const std::string &path, glm::vec3 &bbox_min, glm::vec3 &bbox_max, glm::dvec3 &centroid)
-{
-    auto g = std::make_unique<T>(path);
-    g->get_dimensions(bbox_min, bbox_max);
-    centroid = g->get_centroid();
-    return std::move(g);
-}
-
-std::unique_ptr<geometry::basic_geometry> make_geometry(const std::string &path, glm::vec3 &bbox_min, glm::vec3 &bbox_max, glm::dvec3 &centroid) {
-    fs::path p(path);
-    auto ext(p.extension());
-    std::unique_ptr<geometry::basic_geometry> result;
-
-    if (ext == ".obj") {
-        result = make_geometry_object<tiny_geometry>(path, bbox_min, bbox_max, centroid);
-    } else {
-        std::stringstream ss;
-        ss << "Unsupported model type: " << ext;
-        throw std::runtime_error(ss.str());
-    }
-
-    return result;
-}
 
 int main(int argc, char *argv[]) {
     int code = 0;
@@ -95,15 +66,19 @@ int main(int argc, char *argv[]) {
 
             // Load geometry
             const char *geometry_path = argc == 1 ? "../models/mcguire/bunny/bunny.obj" : argv[1];
+            std::shared_ptr<mvw_geometry> geometry(make_geometry(geometry_path));
+
+            // Fetch dimensions of model
             glm::vec3 bbox_min, bbox_max;
-            glm::dvec3 centroid;
-            std::shared_ptr<geometry::basic_geometry> geometry(make_geometry(geometry_path, bbox_min, bbox_max, centroid));
+            geometry->get_dimensions(bbox_min, bbox_max);
+            glm::dvec3 centroid = geometry->get_centroid();
 
             glm::vec3 dimensions = bbox_max - bbox_min, center = (bbox_max + bbox_min) / 2.f;
             std::cout << "Object dimensions: " << glm::to_string(dimensions) << std::endl;
             std::cout << "Object center: " << glm::to_string(center) << std::endl;
             std::cout << "Object centroid: " << glm::to_string(centroid) << std::endl;
 
+            // Compute model scale
             float scale = 1. / dimensions.z;
  
             // Set the context parameters (render size and some uniforms)
