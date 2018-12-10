@@ -19,6 +19,7 @@ protected:
 
     mvw_geometry();
 
+    void load_vertex_data(const std::vector<float> &vertices, const std::vector<uint32_t> &indices);
 public:
     inline const shadertoy::gl::vertex_array &vertex_array() const {
         return vao_;

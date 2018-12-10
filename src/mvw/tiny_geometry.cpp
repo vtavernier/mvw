@@ -61,6 +61,9 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
 
         if (index.texcoord_index < 0) {
             has_uv = false;
+
+            vertices.push_back(0.0f);
+            vertices.push_back(0.0f);
         } else if (has_uv) {
             vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
             vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
@@ -69,47 +72,9 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
         indices.push_back(indices.size());
     }
 
-    indices_size_ = indices.size();
-
     bbox_min_ = d_min;
     bbox_max_ = d_max;
     bbox_centroid_ = d_centroid / static_cast<double>(vertices.size() / 8);
 
-    vao_.bind();
-    vertices_.bind(GL_ARRAY_BUFFER);
-    indices_.bind(GL_ELEMENT_ARRAY_BUFFER);
-
-    vertices_.data(sizeof(float) * vertices.size(), vertices.data(),
-                   GL_STATIC_DRAW);
-    indices_.data(sizeof(uint32_t) * indices.size(), indices.data(),
-                  GL_STATIC_DRAW);
-
-    size_t vertex_data_stride = 6 + (has_uv ? 2 : 0);
-    size_t texcoord_offset = 3;
-    size_t normal_offset = texcoord_offset + (has_uv ? 2 : 0);
-
-    // bind input "position" to vertex locations (3 floats)
-    gl::attrib_location position(0);
-    position.vertex_pointer(3, GL_FLOAT, GL_FALSE, vertex_data_stride * sizeof(GLfloat),
-                            (void *)0);
-    position.enable_vertex_array();
-
-    if (has_uv) {
-        // bind input "texCoord" to vertex texture coordinates (2 floats)
-        gl::attrib_location texCoord(1);
-        texCoord.vertex_pointer(2, GL_FLOAT, GL_FALSE, vertex_data_stride * sizeof(GLfloat),
-                                (void *)(texcoord_offset * sizeof(GLfloat)));
-        texCoord.enable_vertex_array();
-    }
-
-    // bind input "normals" to vertex normals (3 floats)
-    gl::attrib_location normals(2);
-    normals.vertex_pointer(3, GL_FLOAT, GL_FALSE, vertex_data_stride * sizeof(GLfloat),
-                           (void *)(normal_offset * sizeof(GLfloat)));
-    normals.enable_vertex_array();
-
-    // Unbind
-    vao_.unbind();
-    indices_.unbind(GL_ELEMENT_ARRAY_BUFFER);
-    vertices_.unbind(GL_ARRAY_BUFFER);
+    load_vertex_data(vertices, indices);
 }
