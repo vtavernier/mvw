@@ -21,11 +21,16 @@ using namespace shadertoy;
 // We need a custom inputs type to pass the MVP matrix
 typedef shader_inputs<eMVP> geometry_inputs_t;
 
+namespace spd = spdlog;
+
 int main(int argc, char *argv[]) {
     int code = 0;
 
+    // Initialize logger
+    auto log = spd::stderr_color_st("viewer");
+
     if (!glfwInit()) {
-        std::cerr << "Failed to initialize glfw" << std::endl;
+        log->critical("Failed to initialize glfw");
         return 2;
     }
 
@@ -35,13 +40,13 @@ int main(int argc, char *argv[]) {
         width, height, "Test model viewer", nullptr, nullptr);
 
     if (!window) {
-        std::cerr << "Failed to create glfw window" << std::endl;
+        log->critical("Failed to create glfw window");
         code = 1;
     } else {
         glfwMakeContextCurrent(window);
         glfwSwapInterval(1);
 
-        utils::log::shadertoy()->set_level(spdlog::level::trace);
+        utils::log::shadertoy()->set_level(spdlog::level::info);
 
         try {
             example_ctx ctx;
@@ -66,6 +71,7 @@ int main(int argc, char *argv[]) {
 
             // Load geometry
             const char *geometry_path = argc == 1 ? "../models/mcguire/bunny/bunny.obj" : argv[1];
+            log->info("Loading model {}", geometry_path);
             std::shared_ptr<mvw_geometry> geometry(make_geometry(geometry_path));
 
             // Fetch dimensions of model
@@ -74,9 +80,9 @@ int main(int argc, char *argv[]) {
             glm::dvec3 centroid = geometry->get_centroid();
 
             glm::vec3 dimensions = bbox_max - bbox_min, center = (bbox_max + bbox_min) / 2.f;
-            std::cout << "Object dimensions: " << glm::to_string(dimensions) << std::endl;
-            std::cout << "Object center: " << glm::to_string(center) << std::endl;
-            std::cout << "Object centroid: " << glm::to_string(centroid) << std::endl;
+            log->info("Object dimensions: {}", glm::to_string(dimensions));
+            log->info("Object center: {}", glm::to_string(center));
+            log->info("Object centroid: {}", glm::to_string(centroid));
 
             // Compute model scale
             float scale = 1. / dimensions.z;
@@ -110,7 +116,7 @@ int main(int argc, char *argv[]) {
 
             // Initialize context
             context.init(chain);
-            std::cout << "Initialized swap chain" << std::endl;
+            log->info("Initialized swap chain");
 
             // Now render for 5s
             int frameCount = 0;
@@ -168,10 +174,10 @@ int main(int argc, char *argv[]) {
                     glfwSetWindowShouldClose(window, true);
             }
         } catch (gl::shader_compilation_error &sce) {
-            std::cerr << "Failed to compile shader: " << sce.log();
+            log->critical("Failed to compile shader: {}", sce.log());
             code = 2;
         } catch (shadertoy_error &err) {
-            std::cerr << "Error: " << err.what();
+            log->critical("GL error: {}", err.what());
             code = 2;
         }
 
