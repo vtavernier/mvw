@@ -30,6 +30,7 @@ std::unique_ptr<geometry::basic_geometry> make_geometry_object(const std::string
 {
     auto g = std::make_unique<T>(path);
     g->get_dimensions(bbox_min, bbox_max);
+    centroid = g->get_centroid();
     return std::move(g);
 }
 
@@ -101,6 +102,7 @@ int main(int argc, char *argv[]) {
             glm::vec3 dimensions = bbox_max - bbox_min, center = (bbox_max + bbox_min) / 2.f;
             std::cout << "Object dimensions: " << glm::to_string(dimensions) << std::endl;
             std::cout << "Object center: " << glm::to_string(center) << std::endl;
+            std::cout << "Object centroid: " << glm::to_string(centroid) << std::endl;
 
             float scale = 1. / dimensions.z;
  
