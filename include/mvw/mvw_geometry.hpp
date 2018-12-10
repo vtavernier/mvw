@@ -6,20 +6,26 @@
 // Base class for geometry loaded by the mvw library
 class mvw_geometry : public shadertoy::geometry::basic_geometry {
     // Provide subclasses direct access to the geometry fields
-protected:
-    /// Vertex array object
+    struct mvw_mesh {
+        shadertoy::gl::vertex_array vao;
+        shadertoy::gl::buffer vertices;
+        shadertoy::gl::buffer indices;
+        size_t indices_size;
+    };
+
+    /// Default VAO: actually unused
     shadertoy::gl::vertex_array vao_;
-    /// Buffer objects
-    shadertoy::gl::buffer vertices_;
-    shadertoy::gl::buffer indices_;
-    size_t indices_size_;
+
+    /// List of meshes to render
+    std::vector<mvw_mesh> meshes_;
+protected:
     glm::vec3 bbox_min_;
     glm::vec3 bbox_max_;
     glm::dvec3 bbox_centroid_;
 
     mvw_geometry();
 
-    void load_vertex_data(const std::vector<float> &vertices, const std::vector<uint32_t> &indices);
+    void add_vertex_data(const std::vector<float> &vertices, const std::vector<uint32_t> &indices);
 public:
     inline const shadertoy::gl::vertex_array &vertex_array() const {
         return vao_;

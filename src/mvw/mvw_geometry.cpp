@@ -10,16 +10,17 @@ mvw_geometry::mvw_geometry()
 {
 }
 
-void mvw_geometry::load_vertex_data(const std::vector<float> &vertices, const std::vector<uint32_t> &indices) {
-    indices_size_ = indices.size();
+void mvw_geometry::add_vertex_data(const std::vector<float> &vertices, const std::vector<uint32_t> &indices) {
+    mvw_mesh mesh;
+    mesh.indices_size = indices.size();
 
-    vao_.bind();
-    vertices_.bind(GL_ARRAY_BUFFER);
-    indices_.bind(GL_ELEMENT_ARRAY_BUFFER);
+    mesh.vao.bind();
+    mesh.vertices.bind(GL_ARRAY_BUFFER);
+    mesh.indices.bind(GL_ELEMENT_ARRAY_BUFFER);
 
-    vertices_.data(sizeof(float) * vertices.size(), vertices.data(),
+    mesh.vertices.data(sizeof(float) * vertices.size(), vertices.data(),
                    GL_STATIC_DRAW);
-    indices_.data(sizeof(uint32_t) * indices.size(), indices.data(),
+    mesh.indices.data(sizeof(uint32_t) * indices.size(), indices.data(),
                   GL_STATIC_DRAW);
 
     // bind input "position" to vertex locations (3 floats)
@@ -41,12 +42,16 @@ void mvw_geometry::load_vertex_data(const std::vector<float> &vertices, const st
     normals.enable_vertex_array();
 
     // Unbind
-    vao_.unbind();
-    indices_.unbind(GL_ELEMENT_ARRAY_BUFFER);
-    vertices_.unbind(GL_ARRAY_BUFFER);
+    mesh.vao.unbind();
+    mesh.indices.unbind(GL_ELEMENT_ARRAY_BUFFER);
+    mesh.vertices.unbind(GL_ARRAY_BUFFER);
+
+    meshes_.emplace_back(std::move(mesh));
 }
 
 void mvw_geometry::draw() const {
-    gl_call(glDrawElements, GL_TRIANGLES, indices_size_, GL_UNSIGNED_INT,
-            nullptr);
+    for (const auto &mesh : meshes_) {
+        auto vao_bind(gl::get_bind_guard(mesh.vao));
+        gl_call(glDrawElements, GL_TRIANGLES, mesh.indices_size, GL_UNSIGNED_INT, nullptr);
+    }
 }

@@ -36,6 +36,9 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
 
     bool has_uv = true;
 
+    vertices.reserve(mesh.indices.size() * 8);
+    indices.reserve(mesh.indices.size());
+
     for (const auto &index : mesh.indices) {
         glm::vec3 p(attrib.vertices[3 * index.vertex_index + 0],
                     attrib.vertices[3 * index.vertex_index + 1],
@@ -76,5 +79,5 @@ tiny_geometry::tiny_geometry(const std::string &geometry_path)
     bbox_max_ = d_max;
     bbox_centroid_ = d_centroid / static_cast<double>(vertices.size() / 8);
 
-    load_vertex_data(vertices, indices);
+    add_vertex_data(vertices, indices);
 }
