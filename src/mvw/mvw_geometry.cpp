@@ -32,13 +32,13 @@ void mvw_geometry::add_vertex_data(const std::vector<float> &vertices, const std
     // bind input "texCoord" to vertex texture coordinates (2 floats)
     gl::attrib_location texCoord(1);
     texCoord.vertex_pointer(2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
-                            (void *)(3 * sizeof(GLfloat)));
+                            (void *)(6 * sizeof(GLfloat)));
     texCoord.enable_vertex_array();
 
     // bind input "normals" to vertex normals (3 floats)
     gl::attrib_location normals(2);
     normals.vertex_pointer(3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
-                           (void *)(5 * sizeof(GLfloat)));
+                           (void *)(3 * sizeof(GLfloat)));
     normals.enable_vertex_array();
 
     // Unbind

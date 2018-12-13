@@ -14,13 +14,11 @@ layout(location = 2) in vec3 normal;
 // Texture coord for fragment
 out vec2 vtexCoord;
 out vec3 vNormal;
-out vec3 vWorldNormal;
 out vec3 vPosition;
 
 void main() {
     vtexCoord = texCoord;
     vNormal = normal;
-    vWorldNormal = (mModel * vec4(normal, 0.0)).xyz;
     vPosition = position;
 
     gl_Position = mProj * mView * mModel * vec4(position, 1.0);

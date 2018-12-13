@@ -147,8 +147,8 @@ int main(int argc, char *argv[]) {
 
                 // Camera matrix
                 glm::mat4 View = glm::lookAt(
-                    glm::vec3(3, 3, 3),  // Location
-                    glm::vec3(0, 0, 0),  // Target
+                    glm::vec3(5, 2, 0),  // Location
+                    glm::vec3(0, 0.5, 0),  // Target
                     glm::vec3(0, 1, 0)   // Up
                     );
 
