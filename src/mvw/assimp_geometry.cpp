@@ -53,7 +53,7 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
             if (p.z < d_min.z) d_min.z = p.z;
 
             if (p.x > d_max.x) d_max.x = p.x;
-            if (p.x > d_max.y) d_max.y = p.y;
+            if (p.y > d_max.y) d_max.y = p.y;
             if (p.z > d_max.z) d_max.z = p.z;
 
             d_centroid += p;
