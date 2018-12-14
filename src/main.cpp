@@ -34,6 +34,10 @@ struct viewer_state {
     viewer_state()
         : draw_wireframe(false), pressed_buttons(0), context(), chain(), render_size()
     {}
+
+    void reload() {
+        context.init(chain);
+    }
 };
 
 const int window_width = 200;
@@ -56,11 +60,13 @@ void glfw_set_framebuffer_size(GLFWwindow *window, int width, int height) {
 }
 
 void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window)); (void)state;
+    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
 
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, true);
+        } else if (key == GLFW_KEY_F5) {
+            state.reload();
         }
     }
 }
@@ -70,6 +76,8 @@ void glfw_char_callback(GLFWwindow *window, unsigned int codepoint) {
 
     if (codepoint == 'w') {
         state.draw_wireframe = !state.draw_wireframe;
+    } else if (codepoint == 'r') {
+        state.reload();
     }
 }
 
