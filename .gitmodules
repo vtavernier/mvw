@@ -1,9 +1,9 @@
 [submodule "libshadertoy"]
 	path = libshadertoy
-	url = https://gitlab.inria.fr/vtaverni/libshadertoy.git
+	url = ../../vtaverni/libshadertoy.git
 [submodule "models"]
 	path = models
-	url = https://gitlab.inria.fr/vtaverni/test-models.git
+	url = ../../vtaverni/test-models.git
 [submodule "assimp"]
 	path = assimp
 	url = https://github.com/assimp/assimp.git
