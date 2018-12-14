@@ -1,13 +1,13 @@
 # 3D test model viewer
 
-This repository contains a sample program showing how to load OBJ models and
+This repository contains a sample program showing how to load various 3D model formats and
 how to render them using [libshadertoy](https://gitlab.inria.fr/vtaverni/libshadertoy).
 
 ## Model viewer
 
 This is still work in progress.
 
-OBJ loading code is from https://github.com/syoyo/tinyobjloader.
+Asset loading is done using the [assimp](assimp/) library.
 
 ## How to use
 

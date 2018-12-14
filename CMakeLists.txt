@@ -37,20 +37,12 @@ set(INCLUDE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SHADERS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 
-# Download tiny_obj_loader
-file(DOWNLOAD https://raw.githubusercontent.com/syoyo/tinyobjloader/v1.0.6/tiny_obj_loader.h
-    ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.h
-    EXPECTED_HASH SHA256=740c4e262a6ac56940852671bbe3e5e162cba7325c59ef57f3d9efdba2c5244c)
-file(DOWNLOAD https://raw.githubusercontent.com/syoyo/tinyobjloader/v1.0.6/tiny_obj_loader.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc
-    EXPECTED_HASH SHA256=b27322737fbd97b615412efd404d20d4a9b0a6556cada15ca4b77c7447b38bd2)
-
 # Create viewer library (used for the viewer and for testing)
 file(GLOB MVW_SOURCES ${SRC_ROOT}/mvw/*.cpp)
-add_library(mvw ${MVW_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/ext/tiny_obj_loader.cc)
+add_library(mvw ${MVW_SOURCES})
 
 target_include_directories(mvw PUBLIC ${INCLUDE_ROOT})
-target_include_directories(mvw PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ext ${Boost_INCLUDE_DIRS})
+target_include_directories(mvw PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(mvw PUBLIC shadertoy-shared ${Boost_filesystem_LIBRARY} assimp)
 target_compile_options(mvw PRIVATE -Wall;-Werror=return-type)
 
