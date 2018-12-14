@@ -16,7 +16,8 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
                                               aiProcess_JoinIdenticalVertices |
                                               aiProcess_GenSmoothNormals |
                                               aiProcess_ImproveCacheLocality |
-                                              aiProcess_SortByPType);
+                                              aiProcess_SortByPType |
+                                              aiProcess_PreTransformVertices);
 
     if (!scene) {
         throw std::runtime_error(importer.GetErrorString());
