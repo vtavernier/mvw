@@ -10,10 +10,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "ui.hpp"
 #include "uniforms.hpp"
 
 #include "mvw/geometry.hpp"
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 using shadertoy::gl::gl_call;
 using namespace shadertoy;
@@ -22,11 +25,53 @@ namespace spd = spdlog;
 
 struct viewer_state {
     bool draw_wireframe;
+    int pressed_buttons;
+
+    shadertoy::render_context context;
+    shadertoy::swap_chain chain;
+    shadertoy::rsize render_size;
 
     viewer_state()
-        : draw_wireframe(false)
+        : draw_wireframe(false), pressed_buttons(0), context(), chain(), render_size()
     {}
 };
+
+const int window_width = 200;
+
+void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+
+    if (action == GLFW_PRESS) {
+        state.pressed_buttons |= button;
+    } else if (action == GLFW_RELEASE) {
+        state.pressed_buttons &= ~button;
+    }
+}
+
+void glfw_set_framebuffer_size(GLFWwindow *window, int width, int height) {
+    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+
+    state.render_size = shadertoy::rsize(width, height);
+    state.context.allocate_textures(state.chain);
+}
+
+void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window)); (void)state;
+
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_ESCAPE) {
+            glfwSetWindowShouldClose(window, true);
+        }
+    }
+}
+
+void glfw_char_callback(GLFWwindow *window, unsigned int codepoint) {
+    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+
+    if (codepoint == 'w') {
+        state.draw_wireframe = !state.draw_wireframe;
+    }
+}
 
 int main(int argc, char *argv[]) {
     int code = 0;
@@ -57,9 +102,30 @@ int main(int argc, char *argv[]) {
             viewer_state state;
             glfwSetWindowUserPointer(window, &state);
 
-            example_ctx ctx;
-            auto &context(ctx.context);
-            auto &chain(ctx.chain);
+            // Set callbacks
+            glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
+            glfwSetFramebufferSizeCallback(window, glfw_set_framebuffer_size);
+            glfwSetKeyCallback(window, glfw_key_callback);
+            glfwSetCharCallback(window, glfw_char_callback);
+
+            // Initialize ImGui
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+            // Bind to Glfw+OpenGL3
+            ImGui_ImplGlfw_InitForOpenGL(window, true);
+            ImGui_ImplOpenGL3_Init("#version 130");
+
+            // Set dark style
+            ImGui::StyleColorsDark();
+
+            // No rounded windows
+            ImGui::GetStyle().WindowRounding = 0.0f;
+
+            // Get reference to context and swap chain
+            auto &context(state.context);
+            auto &chain(state.chain);
 
             // Extra uniform inputs storage
             geometry_inputs_t extra_inputs;
@@ -100,7 +166,7 @@ int main(int argc, char *argv[]) {
             float scale = 1. / dimensions.z;
  
             // Set the context parameters (render size and some uniforms)
-            ctx.render_size = rsize(width, height);
+            state.render_size = rsize(width, height);
             context.state().get<iTimeDelta>() = 1.0 / 60.0;
             context.state().get<iFrameRate>() = 60.0;
 
@@ -127,7 +193,7 @@ int main(int argc, char *argv[]) {
             // The default_framebuffer policy makes this buffer draw directly to
             // the window instead of using a texture that is then copied to the
             // screen.
-            chain.emplace_back(imageBuffer, make_size_ref(ctx.render_size),
+            chain.emplace_back(imageBuffer, make_size_ref(state.render_size),
                                member_swap_policy::default_framebuffer);
 
             // Initialize context
@@ -138,26 +204,39 @@ int main(int argc, char *argv[]) {
             int frameCount = 0;
             double t = 0.;
 
-            // Set the resize callback
-            glfwSetWindowUserPointer(window, &ctx);
-            glfwSetFramebufferSizeCallback(
-                window, example_set_framebuffer_size<example_ctx>);
-
             while (!glfwWindowShouldClose(window)) {
                 // Poll events
                 glfwPollEvents();
+
+                // Start ImGui frame
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
+
+                ImGui::SetNextWindowPos(ImVec2(0, 0));
+                ImGui::SetNextWindowSize(ImVec2(window_width, state.render_size.height));
+                ImGui::Begin("mvw", NULL,
+                             ImGuiWindowFlags_NoResize |
+                             ImGuiWindowFlags_NoMove);
+
+                ImGui::Checkbox("Show wireframe", &state.draw_wireframe);
+
+                ImGui::End();
+
+                // Complete render
+                ImGui::Render();
 
                 // Update uniforms
                 context.state().get<iTime>() = t;
                 context.state().get<iFrame>() = frameCount;
 
                 // Set viewport
-                gl_call(glViewport, 0, 0, ctx.render_size.width, ctx.render_size.height);
+                gl_call(glViewport, 0, 0, state.render_size.width, state.render_size.height);
 
                 // Projection matrix display range : 0.1 unit <-> 100 units
                 glm::mat4 Projection = glm::perspective(
-                    glm::radians(25.0f), (float)ctx.render_size.width /
-                                             (float)ctx.render_size.height,
+                    glm::radians(25.0f), (float)state.render_size.width /
+                                             (float)state.render_size.height,
                     0.1f, 100.0f);
 
                 // Camera matrix
@@ -194,15 +273,15 @@ int main(int argc, char *argv[]) {
                     context.render(chain);
                 }
 
+                // Render ImGui overlay
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
                 // Buffer swapping
                 glfwSwapBuffers(window);
 
                 // Update time and framecount
                 t = glfwGetTime();
                 frameCount++;
-
-                if (libshadertoy_test_exit())
-                    glfwSetWindowShouldClose(window, true);
             }
         } catch (gl::shader_compilation_error &sce) {
             log->critical("Failed to compile shader: {}", sce.log());
@@ -211,6 +290,11 @@ int main(int argc, char *argv[]) {
             log->critical("GL error: {}", err.what());
             code = 2;
         }
+
+        // Cleanup
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
 
         glfwDestroyWindow(window);
     }

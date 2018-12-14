@@ -47,14 +47,20 @@ set(IMGUI_FILES
     imgui_widgets.cpp
     imstb_rectpack.h
     imstb_textedit.h
-    imstb_truetype.h)
+    imstb_truetype.h
+    examples/imgui_impl_glfw.h
+    examples/imgui_impl_glfw.cpp
+    examples/imgui_impl_opengl3.h
+    examples/imgui_impl_opengl3.cpp)
 foreach(IMGUI_FILE ${IMGUI_FILES})
+    get_filename_component(IMGUI_FILE_BASENAME ${IMGUI_FILE} NAME)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/imgui/${IMGUI_FILE}
-        ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE}
+        ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE_BASENAME}
         COPYONLY)
-    list(APPEND IMGUI_SOURCES ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE})
+    list(APPEND IMGUI_SOURCES ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE_BASENAME})
 endforeach()
 add_library(imgui STATIC ${IMGUI_SOURCES})
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
 target_include_directories(imgui PUBLIC ${IMGUI_BUILD_DIRECTORY})
 
 # Directories
