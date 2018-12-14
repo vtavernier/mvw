@@ -51,7 +51,7 @@ void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int 
 void glfw_set_framebuffer_size(GLFWwindow *window, int width, int height) {
     auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
 
-    state.render_size = shadertoy::rsize(width, height);
+    state.render_size = shadertoy::rsize(width - window_width, height);
     state.context.allocate_textures(state.chain);
 }
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
             float scale = 1. / dimensions.z;
  
             // Set the context parameters (render size and some uniforms)
-            state.render_size = rsize(width, height);
+            state.render_size = rsize(width - window_width, height);
             context.state().get<iTimeDelta>() = 1.0 / 60.0;
             context.state().get<iFrameRate>() = 60.0;
 
@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
                 context.state().get<iFrame>() = frameCount;
 
                 // Set viewport
-                gl_call(glViewport, 0, 0, state.render_size.width, state.render_size.height);
+                gl_call(glViewport, window_width, 0, state.render_size.width, state.render_size.height);
 
                 // Projection matrix display range : 0.1 unit <-> 100 units
                 glm::mat4 Projection = glm::perspective(
