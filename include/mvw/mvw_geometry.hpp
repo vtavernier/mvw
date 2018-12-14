@@ -3,6 +3,8 @@
 
 #include <shadertoy.hpp>
 
+#include "mvw/vertex_data.hpp"
+
 // Base class for geometry loaded by the mvw library
 class mvw_geometry : public shadertoy::geometry::basic_geometry {
     // Provide subclasses direct access to the geometry fields
@@ -25,7 +27,7 @@ protected:
 
     mvw_geometry();
 
-    void add_vertex_data(const std::vector<float> &vertices, const std::vector<uint32_t> &indices);
+    void add_vertex_data(const std::vector<vertex_data> &vertices, const std::vector<uint32_t> &indices);
 public:
     inline const shadertoy::gl::vertex_array &vertex_array() const {
         return vao_;

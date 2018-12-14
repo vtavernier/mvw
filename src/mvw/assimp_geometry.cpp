@@ -35,7 +35,7 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
     for (size_t mi = 0; mi < scene->mNumMeshes; ++mi) {
         aiMesh * mesh = scene->mMeshes[mi];
 
-        std::vector<float> vertices;
+        std::vector<vertex_data> vertices;
         std::vector<uint32_t> indices;
 
         vertices.reserve(mesh->mNumVertices * 8);
@@ -46,6 +46,7 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
                         mesh->mVertices[i].y,
                         mesh->mVertices[i].z);
 
+            // Compute bounding box
             if (p.x < d_min.x) d_min.x = p.x;
             if (p.y < d_min.y) d_min.y = p.y;
             if (p.z < d_min.z) d_min.z = p.z;
@@ -56,21 +57,21 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
 
             d_centroid += p;
 
-            vertices.push_back(p.x);
-            vertices.push_back(p.y);
-            vertices.push_back(p.z);
+            // Prepare vertex_data
+            vertex_data d;
 
-            vertices.push_back(mesh->mNormals[i].x);
-            vertices.push_back(mesh->mNormals[i].y);
-            vertices.push_back(mesh->mNormals[i].z);
+            d.position = p;
+
+            d.normal.x = mesh->mNormals[i].x;
+            d.normal.y = mesh->mNormals[i].y;
+            d.normal.z = mesh->mNormals[i].z;
 
             if (mesh->mNumUVComponents[0] >= 2) {
-                vertices.push_back(mesh->mTextureCoords[0][i].x);
-                vertices.push_back(mesh->mTextureCoords[0][i].y);
-            } else {
-                vertices.push_back(0.0f);
-                vertices.push_back(0.0f);
+                d.texCoords.x = mesh->mTextureCoords[0][i].x;
+                d.texCoords.y = mesh->mTextureCoords[0][i].y;
             }
+
+            vertices.push_back(d);
         }
 
         centroid_count += mesh->mNumVertices;
