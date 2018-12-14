@@ -242,15 +242,15 @@ int main(int argc, char *argv[]) {
                 // Camera matrix
                 glm::mat4 View = glm::lookAt(
                     glm::vec3(5, 2, 0),  // Location
-                    glm::vec3(0, 0.5, 0),  // Target
+                    glm::vec3(0, 0, 0),  // Target
                     glm::vec3(0, 1, 0)   // Up
                     );
 
                 // Model matrix
-                glm::mat4 Model = glm::rotate(
-                    glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(scale)), -center),
+                glm::mat4 Model = glm::translate(glm::rotate(
+                    glm::scale(glm::mat4(1.f), glm::vec3(scale)),
                     frameCount * 0.0125f,
-                    glm::vec3(0.f, 1.f, 0.f));
+                    glm::vec3(0.f, 1.f, 0.f)), -center);
 
                 // Our ModelViewProjection : multiplication of our 3 matrices
                 extra_inputs.get<mModel>() = Model;
