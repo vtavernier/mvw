@@ -35,6 +35,28 @@ set(ASSIMP_BUILD_STL_IMPORTER ON)
 set(ASSIMP_BUILD_NFF_IMPORTER ON)
 add_subdirectory(assimp EXCLUDE_FROM_ALL)
 
+# ImGui has no CMakeLists.txt for now, so manually make a library out of it
+set(IMGUI_BUILD_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/imgui)
+file(MAKE_DIRECTORY ${IMGUI_BUILD_DIRECTORY})
+set(IMGUI_FILES
+    imconfig.h
+    imgui.cpp
+    imgui.h
+    imgui_draw.cpp
+    imgui_internal.h
+    imgui_widgets.cpp
+    imstb_rectpack.h
+    imstb_textedit.h
+    imstb_truetype.h)
+foreach(IMGUI_FILE ${IMGUI_FILES})
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/imgui/${IMGUI_FILE}
+        ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE}
+        COPYONLY)
+    list(APPEND IMGUI_SOURCES ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE})
+endforeach()
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC ${IMGUI_BUILD_DIRECTORY})
+
 # Directories
 set(INCLUDE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -54,5 +76,5 @@ file(GLOB VIEWER_SOURCES ${SRC_ROOT}/*.cpp)
 add_executable(viewer ${VIEWER_SOURCES})
 
 target_include_directories(viewer PRIVATE ${INCLUDE_ROOT})
-target_link_libraries(viewer PRIVATE mvw ${Glfw3_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(viewer PRIVATE mvw imgui ${Glfw3_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
