@@ -20,6 +20,14 @@ using namespace shadertoy;
 
 namespace spd = spdlog;
 
+struct viewer_state {
+    bool draw_wireframe;
+
+    viewer_state()
+        : draw_wireframe(false)
+    {}
+};
+
 int main(int argc, char *argv[]) {
     int code = 0;
 
@@ -46,6 +54,9 @@ int main(int argc, char *argv[]) {
         utils::log::shadertoy()->set_level(spdlog::level::info);
 
         try {
+            viewer_state state;
+            glfwSetWindowUserPointer(window, &state);
+
             example_ctx ctx;
             auto &context(ctx.context);
             auto &chain(ctx.chain);
@@ -107,6 +118,10 @@ int main(int argc, char *argv[]) {
 
             // Also we need depth test
             gl_call(glEnable, GL_DEPTH_TEST);
+            gl_call(glDepthFunc, GL_LEQUAL);
+
+            // Smooth wireframe
+            gl_call(glEnable, GL_LINE_SMOOTH);
 
             // Add the image buffer to the swap chain, at the given size
             // The default_framebuffer policy makes this buffer draw directly to
@@ -162,9 +177,22 @@ int main(int argc, char *argv[]) {
                 extra_inputs.get<mModel>() = Model;
                 extra_inputs.get<mView>() = View;
                 extra_inputs.get<mProj>() = Projection;
+                extra_inputs.get<bWireframe>() = GL_FALSE;
 
+                // First call: clear everything
+                imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 // Render the swap chain
+                gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_FILL);
                 context.render(chain);
+
+                if (state.draw_wireframe) {
+                    // Second call: render wireframe on top
+                    extra_inputs.get<bWireframe>() = GL_TRUE;
+                    imageBuffer->clear_bits(0);
+                    // Render swap chain
+                    gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_LINE);
+                    context.render(chain);
+                }
 
                 // Buffer swapping
                 glfwSwapBuffers(window);
