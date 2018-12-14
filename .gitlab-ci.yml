@@ -1,0 +1,22 @@
+---
+image: amd64/debian:stretch
+
+cache:
+  key: ${CI_JOB_NAME}
+  paths:
+    - build/
+
+build_viewer:
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    DEBIAN_FRONTEND: noninteractive
+  script:
+    - apt-get update -q && apt-get install -y --no-install-recommends git build-essential debhelper libboost-filesystem-dev libboost-date-time-dev libc6-dev libstdc++-6-dev libsoil-dev libjpeg-dev libepoxy-dev libgl1-mesa-dev libglm-dev libopenexr-dev libunwind-dev pkg-config cmake libglfw3-dev
+    - mkdir -p build
+    - cd build
+    - cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+    - cmake --build . -- -j$(nproc)
+  tags:
+    - linux
+
+# vim: ft=yaml:sw=2:ts=2
