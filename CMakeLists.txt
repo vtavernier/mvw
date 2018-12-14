@@ -11,6 +11,9 @@ set(CMAKE_MODULE_PATH
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
 
+# pthread
+find_package(Threads REQUIRED)
+
 # OpenGL libraries
 find_package(OpenGL REQUIRED)
 find_package(Epoxy REQUIRED)
@@ -51,5 +54,5 @@ file(GLOB VIEWER_SOURCES ${SRC_ROOT}/*.cpp)
 add_executable(viewer ${VIEWER_SOURCES})
 
 target_include_directories(viewer PRIVATE ${INCLUDE_ROOT})
-target_link_libraries(viewer PRIVATE mvw ${Glfw3_LIBRARY})
+target_link_libraries(viewer PRIVATE mvw ${Glfw3_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
