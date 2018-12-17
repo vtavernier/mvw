@@ -46,12 +46,22 @@ struct viewer_state {
     std::shared_ptr<spd::logger> log;
 
     viewer_state(std::shared_ptr<spd::logger> log)
-        : draw_wireframe(false), rotate_camera(true), user_rotate_x(0.0f), user_rotate_y(0.0f), pressed_pos_x(0.), pressed_pos_y(0.), current_pos_x(0.), current_pos_y(0.), pressed_buttons(0), frame_count(0), context(), chain(), render_size(), log(log)
-    {}
+        : draw_wireframe(false),
+          rotate_camera(true),
+          user_rotate_x(0.0f),
+          user_rotate_y(0.0f),
+          pressed_pos_x(0.),
+          pressed_pos_y(0.),
+          current_pos_x(0.),
+          current_pos_y(0.),
+          pressed_buttons(0),
+          frame_count(0),
+          context(),
+          chain(),
+          render_size(),
+          log(log) {}
 
-    void reload() {
-        context.init(chain);
-    }
+    void reload() { context.init(chain); }
 
     void update_rotation(bool previous_rotate) {
         if (previous_rotate && !rotate_camera)
@@ -61,15 +71,16 @@ struct viewer_state {
     }
 
     float get_rotation_x() {
-        return (user_rotate_x + mouse_speed * (current_pos_y - pressed_pos_y)) * rotate_speed;
+        return (user_rotate_x + mouse_speed * (current_pos_y - pressed_pos_y)) *
+               rotate_speed;
     }
 
-    float get_rotation_y() {
-        return get_rotation_y(rotate_camera ? 1 : 0);
-    }
+    float get_rotation_y() { return get_rotation_y(rotate_camera ? 1 : 0); }
 
     float get_rotation_y(int frame_factor) {
-        return ((frame_count * frame_factor) + user_rotate_y + mouse_speed * (current_pos_x - pressed_pos_x)) * rotate_speed;
+        return ((frame_count * frame_factor) + user_rotate_y +
+                mouse_speed * (current_pos_x - pressed_pos_x)) *
+               rotate_speed;
     }
 
     void apply_mouse_rotation() {
@@ -80,12 +91,13 @@ struct viewer_state {
     }
 };
 
-void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+void glfw_mouse_button_callback(GLFWwindow *window, int button, int action,
+                                int mods) {
+    auto &state =
+        *reinterpret_cast<viewer_state *>(glfwGetWindowUserPointer(window));
 
     // Ignore mouse clicks in window area
-    if (state.current_pos_x < window_width)
-        return;
+    if (state.current_pos_x < window_width) return;
 
     if (action == GLFW_PRESS) {
         state.pressed_buttons |= (1 << button);
@@ -106,14 +118,17 @@ void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int 
 }
 
 void glfw_set_framebuffer_size(GLFWwindow *window, int width, int height) {
-    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+    auto &state =
+        *reinterpret_cast<viewer_state *>(glfwGetWindowUserPointer(window));
 
     state.render_size = shadertoy::rsize(width - window_width, height);
     state.context.allocate_textures(state.chain);
 }
 
-void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action,
+                       int mods) {
+    auto &state =
+        *reinterpret_cast<viewer_state *>(glfwGetWindowUserPointer(window));
 
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_ESCAPE) {
@@ -125,7 +140,8 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
 }
 
 void glfw_char_callback(GLFWwindow *window, unsigned int codepoint) {
-    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+    auto &state =
+        *reinterpret_cast<viewer_state *>(glfwGetWindowUserPointer(window));
 
     if (codepoint == 'w') {
         state.draw_wireframe = !state.draw_wireframe;
@@ -135,7 +151,8 @@ void glfw_char_callback(GLFWwindow *window, unsigned int codepoint) {
 }
 
 void glfw_cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
-    auto &state = *reinterpret_cast<viewer_state*>(glfwGetWindowUserPointer(window));
+    auto &state =
+        *reinterpret_cast<viewer_state *>(glfwGetWindowUserPointer(window));
 
     state.current_pos_x = xpos;
     state.current_pos_y = ypos;
@@ -159,8 +176,8 @@ int main(int argc, char *argv[]) {
 
     // Initialize window
     int width = 1280, height = 960;
-    GLFWwindow *window = glfwCreateWindow(
-        width, height, "Test model viewer", nullptr, nullptr);
+    GLFWwindow *window =
+        glfwCreateWindow(width, height, "Test model viewer", nullptr, nullptr);
 
     if (!window) {
         log->critical("Failed to create glfw window");
@@ -185,7 +202,8 @@ int main(int argc, char *argv[]) {
             // Initialize ImGui
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
-            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            ImGuiIO &io = ImGui::GetIO();
+            (void)io;
 
             // Bind to Glfw+OpenGL3
             ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -208,10 +226,10 @@ int main(int argc, char *argv[]) {
             context.buffer_template().shader_inputs().emplace("geometry",
                                                               &extra_inputs);
 
-            // The default vertex shader is not sufficient, we replace it with our own
+            // The default vertex shader is not sufficient, we replace it with
+            // our own
             context.buffer_template()[GL_VERTEX_SHADER] =
-                compiler::shader_template::parse_file(
-                    "../shaders/vertex.glsl");
+                compiler::shader_template::parse_file("../shaders/vertex.glsl");
 
             // Same for fragment shader
             context.buffer_template()[GL_FRAGMENT_SHADER] =
@@ -222,23 +240,26 @@ int main(int argc, char *argv[]) {
             context.buffer_template().compile(GL_VERTEX_SHADER);
 
             // Load geometry
-            const char *geometry_path = argc == 1 ? "../models/mcguire/bunny/bunny.obj" : argv[1];
+            const char *geometry_path =
+                argc == 1 ? "../models/mcguire/bunny/bunny.obj" : argv[1];
             log->info("Loading model {}", geometry_path);
-            std::shared_ptr<mvw_geometry> geometry(make_geometry(geometry_path));
+            std::shared_ptr<mvw_geometry> geometry(
+                make_geometry(geometry_path));
 
             // Fetch dimensions of model
             glm::vec3 bbox_min, bbox_max;
             geometry->get_dimensions(bbox_min, bbox_max);
             glm::dvec3 centroid = geometry->get_centroid();
 
-            glm::vec3 dimensions = bbox_max - bbox_min, center = (bbox_max + bbox_min) / 2.f;
+            glm::vec3 dimensions = bbox_max - bbox_min,
+                      center = (bbox_max + bbox_min) / 2.f;
             log->info("Object dimensions: {}", glm::to_string(dimensions));
             log->info("Object center: {}", glm::to_string(center));
             log->info("Object centroid: {}", glm::to_string(centroid));
 
             // Compute model scale
             float scale = 1. / dimensions.z;
- 
+
             // Set the context parameters (render size and some uniforms)
             state.render_size = rsize(width - window_width, height);
             context.state().get<iTimeDelta>() = 1.0 / 60.0;
@@ -287,10 +308,10 @@ int main(int argc, char *argv[]) {
                 ImGui::NewFrame();
 
                 ImGui::SetNextWindowPos(ImVec2(0, 0));
-                ImGui::SetNextWindowSize(ImVec2(window_width, state.render_size.height));
-                ImGui::Begin("mvw", NULL,
-                             ImGuiWindowFlags_NoResize |
-                             ImGuiWindowFlags_NoMove);
+                ImGui::SetNextWindowSize(
+                    ImVec2(window_width, state.render_size.height));
+                ImGui::Begin("mvw", NULL, ImGuiWindowFlags_NoResize |
+                                              ImGuiWindowFlags_NoMove);
 
                 ImGui::Checkbox("Show wireframe", &state.draw_wireframe);
 
@@ -308,7 +329,8 @@ int main(int argc, char *argv[]) {
                 context.state().get<iFrame>() = state.frame_count;
 
                 // Set viewport
-                gl_call(glViewport, window_width, 0, state.render_size.width, state.render_size.height);
+                gl_call(glViewport, window_width, 0, state.render_size.width,
+                        state.render_size.height);
 
                 // Projection matrix display range : 0.1 unit <-> 100 units
                 glm::mat4 Projection = glm::perspective(
@@ -317,18 +339,19 @@ int main(int argc, char *argv[]) {
                     0.1f, 100.0f);
 
                 // Camera matrix
-                glm::mat4 View = glm::lookAt(
-                    glm::vec3(5, 2, 0),  // Location
-                    glm::vec3(0, 0, 0),  // Target
-                    glm::vec3(0, 1, 0)   // Up
-                    );
+                glm::mat4 View = glm::lookAt(glm::vec3(5, 2, 0),  // Location
+                                             glm::vec3(0, 0, 0),  // Target
+                                             glm::vec3(0, 1, 0)   // Up
+                                             );
 
                 // Model matrix
                 auto Model = glm::scale(glm::mat4(1.f), glm::vec3(scale));
                 // Y rotation
-                Model = glm::rotate(Model, state.get_rotation_y(), glm::vec3(0.f, 1.f, 0.f));
+                Model = glm::rotate(Model, state.get_rotation_y(),
+                                    glm::vec3(0.f, 1.f, 0.f));
                 // X rotation
-                Model = glm::rotate(Model, state.get_rotation_x(), glm::vec3(1.f, 0.f, 0.f));
+                Model = glm::rotate(Model, state.get_rotation_x(),
+                                    glm::vec3(1.f, 0.f, 0.f));
 
                 // Center model at origin
                 Model = glm::translate(Model, -center);
@@ -340,7 +363,8 @@ int main(int argc, char *argv[]) {
                 extra_inputs.get<bWireframe>() = GL_FALSE;
 
                 // First call: clear everything
-                imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT |
+                                        GL_DEPTH_BUFFER_BIT);
                 // Render the swap chain
                 gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_FILL);
                 context.render(chain);

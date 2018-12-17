@@ -5,12 +5,10 @@
 using namespace shadertoy;
 using shadertoy::gl::gl_call;
 
-mvw_geometry::mvw_geometry()
-    : basic_geometry()
-{
-}
+mvw_geometry::mvw_geometry() : basic_geometry() {}
 
-void mvw_geometry::add_vertex_data(const std::vector<vertex_data> &vertices, const std::vector<uint32_t> &indices) {
+void mvw_geometry::add_vertex_data(const std::vector<vertex_data> &vertices,
+                                   const std::vector<uint32_t> &indices) {
     mvw_mesh mesh;
     mesh.indices_size = indices.size();
 
@@ -19,9 +17,9 @@ void mvw_geometry::add_vertex_data(const std::vector<vertex_data> &vertices, con
     mesh.indices.bind(GL_ELEMENT_ARRAY_BUFFER);
 
     mesh.vertices.data(sizeof(vertex_data) * vertices.size(), vertices.data(),
-                   GL_STATIC_DRAW);
+                       GL_STATIC_DRAW);
     mesh.indices.data(sizeof(uint32_t) * indices.size(), indices.data(),
-                  GL_STATIC_DRAW);
+                      GL_STATIC_DRAW);
 
     // bind input "position" to vertex locations (3 floats)
     gl::attrib_location position(0);
@@ -55,6 +53,7 @@ void mvw_geometry::add_vertex_data(const std::vector<vertex_data> &vertices, con
 void mvw_geometry::draw() const {
     for (const auto &mesh : meshes_) {
         auto vao_bind(gl::get_bind_guard(mesh.vao));
-        gl_call(glDrawElements, GL_TRIANGLES, mesh.indices_size, GL_UNSIGNED_INT, nullptr);
+        gl_call(glDrawElements, GL_TRIANGLES, mesh.indices_size,
+                GL_UNSIGNED_INT, nullptr);
     }
 }

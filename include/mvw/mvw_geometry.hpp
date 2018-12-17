@@ -20,15 +20,18 @@ class mvw_geometry : public shadertoy::geometry::basic_geometry {
 
     /// List of meshes to render
     std::vector<mvw_mesh> meshes_;
-protected:
+
+   protected:
     glm::vec3 bbox_min_;
     glm::vec3 bbox_max_;
     glm::dvec3 bbox_centroid_;
 
     mvw_geometry();
 
-    void add_vertex_data(const std::vector<vertex_data> &vertices, const std::vector<uint32_t> &indices);
-public:
+    void add_vertex_data(const std::vector<vertex_data> &vertices,
+                         const std::vector<uint32_t> &indices);
+
+   public:
     inline const shadertoy::gl::vertex_array &vertex_array() const {
         return vao_;
     }
