@@ -163,6 +163,10 @@ void glfw_cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
     }
 }
 
+std::shared_ptr<shadertoy::inputs::basic_input> load_envmap(shadertoy::render_context &context, const std::string &path) {
+    return context.error_input();
+}
+
 int main(int argc, char *argv[]) {
     int code = 0;
 
@@ -270,6 +274,9 @@ int main(int argc, char *argv[]) {
                 std::make_shared<buffers::geometry_buffer>("image"));
             imageBuffer->source_file("../shaders/shader-gradient.glsl");
             imageBuffer->geometry(geometry);
+
+            // Load the env map
+            imageBuffer->inputs().emplace_back("envmapChannel", load_envmap(context, "../envmaps/studio_small_03_4k.exr"));
 
             // Without a background, the buffer should also clear the previous
             // contents
