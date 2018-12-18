@@ -258,8 +258,8 @@ int main(int argc, char *argv[]) {
             log->info("Object centroid: {}", glm::to_string(centroid));
 
             // Set state
-            context.state().get<bboxMax>() = bbox_max;
-            context.state().get<bboxMin>() = bbox_min;
+            extra_inputs.get<bboxMax>() = bbox_max;
+            extra_inputs.get<bboxMin>() = bbox_min;
 
             // Compute model scale
             float scale = 1. / dimensions.z;
