@@ -19,7 +19,8 @@ using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
 viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
-                             int height, const std::string &geometry_path) {
+                             int height, const std::string &geometry_path,
+                             const std::string &shader_path) {
     window_ =
         glfwCreateWindow(width, height, "Test model viewer", nullptr, nullptr);
 
@@ -84,6 +85,7 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Load geometry
     log->info("Loading model {}", geometry_path);
     std::shared_ptr<mvw_geometry> geometry(make_geometry(geometry_path));
+    geometry_ = geometry;
 
     // Fetch dimensions of model
     glm::vec3 bbox_min, bbox_max;
@@ -111,11 +113,10 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
 
     // Create the image buffer
     auto imageBuffer(std::make_shared<buffers::geometry_buffer>("image"));
-    imageBuffer->source_file("../shaders/shader-gradient.glsl");
+    imageBuffer->source_file(shader_path);
     imageBuffer->geometry(geometry);
 
-    // Without a background, the buffer should also clear the previous
-    // contents
+    // Without a background, the buffer should also clear the previous contents
     imageBuffer->clear_color({.15f, .15f, .15f, 1.f});
     imageBuffer->clear_depth(1.f);
     imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

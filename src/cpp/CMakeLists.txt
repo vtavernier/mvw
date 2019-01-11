@@ -14,5 +14,8 @@ file(GLOB VIEWER_SOURCES ${SRC}/*.cpp)
 add_executable(viewer ${VIEWER_SOURCES})
 
 target_include_directories(viewer PRIVATE ${INCLUDE_ROOT})
-target_link_libraries(viewer PRIVATE mvw imgui ${Glfw3_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(viewer PRIVATE mvw imgui ${Glfw3_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})
 target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
+
+# Output into main folder
+set_target_properties(viewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
