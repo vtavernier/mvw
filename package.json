@@ -1,0 +1,22 @@
+{
+  "name": "mvw",
+  "version": "1.0.0",
+  "description": "This repository contains a sample program showing how to load various 3D model formats and how to render them using [libshadertoy](https://gitlab.inria.fr/vtaverni/libshadertoy).",
+  "bin": {
+    "glslify-deps": "./src/js/glslify-deps.js"
+  },
+  "scripts": {
+    "glslify-deps": "node ./src/js/glslify-deps.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.inria.fr/vtaverni/mvw.git"
+  },
+  "author": "Vincent Tavernier <vincent.tavernier@inria.fr>",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^2.19.0",
+    "glslify": "^7.0.0",
+    "glslify-deps": "^1.3.1"
+  }
+}
