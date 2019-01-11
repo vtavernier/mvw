@@ -12,6 +12,7 @@ Asset loading is done using the [assimp](assimp/) library.
 ## How to use
 
 ```bash
+npm install
 mkdir -p build ; cd build
 cmake ..
 make -j$(nproc)
