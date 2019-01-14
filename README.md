@@ -9,6 +9,8 @@ This is still work in progress.
 
 Asset loading is done using the [assimp](assimp/) library.
 
+Shader assembly is done using m4, which needs to be installed.
+
 ## How to use
 
 ```bash
