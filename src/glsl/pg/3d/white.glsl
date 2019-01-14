@@ -3,9 +3,9 @@ struct pg_state {
     int splats;
 };
 
-void pg_seed(inout pg_state this_, ivec2 nc, ivec2 tile_count, int random_seed, int expected_splats)
+void pg_seed(inout pg_state this_, ivec3 nc, ivec3 tile_count, int random_seed, int expected_splats)
 {
-    uint seed = uint(nc.x * tile_count.x + nc.y + 1 + random_seed);
+    uint seed = uint(nc.z * tile_count.y * tile_count.z + nc.x * tile_count.x + nc.y + 1 + random_seed);
     prng_seed(this_.state, seed);
 
     // The expected number of points for given splats is splats

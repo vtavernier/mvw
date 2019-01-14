@@ -153,6 +153,10 @@ void viewer_window::run() {
     // Rendering time
     double t = 0.;
 
+    // Defaults
+    extra_inputs.get<gTilesize>() = state_->scale;
+    extra_inputs.get<gSplats>() = 1;
+
     while (!glfwWindowShouldClose(window_)) {
         // Poll events
         glfwPollEvents();
@@ -173,6 +177,11 @@ void viewer_window::run() {
         bool previous_rotate = state_->rotate_camera;
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
+
+        ImGui::SliderFloat("Tile size", &extra_inputs.get<gTilesize>(), 0.1f, 2.0f, "%2.3f", 1.0f);
+        ImGui::SliderInt("Splats", &extra_inputs.get<gSplats>(), 1, 30, "%d");
+        ImGui::SliderFloat("F0", &extra_inputs.get<gF0>(), 0.001f, 10.0f, "%2.4f", 1.0f);
+        ImGui::SliderAngle("W0", &extra_inputs.get<gW0>(), 0.0f, 360.0f, "%2.2f");
 
         ImGui::End();
 
