@@ -18,5 +18,8 @@ build_viewer:
     - cmake --build . -- -j$(nproc)
   tags:
     - linux
+  except:
+    variables:
+      - $CI_COMMIT_REF_NAME =~ /feature\/glslify/
 
 # vim: ft=yaml:sw=2:ts=2
