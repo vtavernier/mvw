@@ -10,7 +10,7 @@ GABOR_KERNEL(h3,vec3)
 m4_define(DISK_KERNEL,`float $1($2 x, float K, float F0, $2 w0, $2 tile_size) {
     float r = length(x);
 
-    return K * smoothstep(.1, 0., r);
+    return K * smoothstep(.1, 0., r) * gSplats;
 }')
 
 DISK_KERNEL(dk2,vec2)
