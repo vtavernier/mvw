@@ -91,6 +91,7 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     glfwSetKeyCallback(window_, glfw_window_key_callback);
     glfwSetCharCallback(window_, glfw_window_char_callback);
     glfwSetCursorPosCallback(window_, glfw_window_cursor_pos_callback);
+    glfwSetScrollCallback(window_, glfw_window_scroll_callback);
 
     // Initialize ImGui
     IMGUI_CHECKVERSION();
@@ -381,6 +382,10 @@ void viewer_window::glfw_cursor_pos_callback(double xpos, double ypos) {
     }
 }
 
+void viewer_window::glfw_scroll_callback(double xoffset, double yoffset) {
+    state_->scale += yoffset / 4.0 * state_->scale;
+}
+
 // Static callbacks
 void viewer_window::glfw_window_mouse_button_callback(GLFWwindow *window,
                                                       int button, int action,
@@ -412,5 +417,11 @@ void viewer_window::glfw_window_cursor_pos_callback(GLFWwindow *window,
                                                     double xpos, double ypos) {
     reinterpret_cast<viewer_window *>(glfwGetWindowUserPointer(window))
         ->glfw_cursor_pos_callback(xpos, ypos);
+}
+
+void viewer_window::glfw_window_scroll_callback(GLFWwindow *window,
+                                                double xoffset, double yoffset) {
+    reinterpret_cast<viewer_window *>(glfwGetWindowUserPointer(window))
+        ->glfw_scroll_callback(xoffset, yoffset);
 }
 
