@@ -82,30 +82,6 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Force compilation of new template
     context.buffer_template().compile(GL_VERTEX_SHADER);
 
-    // Load geometry
-    log->info("Loading model {}", geometry_path);
-    std::shared_ptr<mvw_geometry> geometry(make_geometry(geometry_path));
-    geometry_ = geometry;
-
-    // Fetch dimensions of model
-    glm::vec3 bbox_min, bbox_max;
-    geometry->get_dimensions(bbox_min, bbox_max);
-    glm::dvec3 centroid = geometry->get_centroid();
-
-    glm::vec3 dimensions = bbox_max - bbox_min,
-              center = (bbox_max + bbox_min) / 2.f;
-    log->info("Object dimensions: {}", glm::to_string(dimensions));
-    log->info("Object center: {}", glm::to_string(center));
-    log->info("Object centroid: {}", glm::to_string(centroid));
-
-    // Set state_
-    extra_inputs.get<bboxMax>() = bbox_max;
-    extra_inputs.get<bboxMin>() = bbox_min;
-
-    // Compute model scale, update state
-    state_->center = center;
-    state_->scale = 1. / dimensions.z;
-
     // Set the context parameters (render size and some uniforms)
     state_->render_size = rsize(width - window_width, height);
     context.state().get<iTimeDelta>() = 1.0 / 60.0;
@@ -114,7 +90,6 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Create the image buffer
     auto imageBuffer(std::make_shared<buffers::geometry_buffer>("image"));
     imageBuffer->source_file(shader_path);
-    imageBuffer->geometry(geometry);
 
     // Without a background, the buffer should also clear the previous contents
     imageBuffer->clear_color({.15f, .15f, .15f, 1.f});
@@ -138,6 +113,32 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Initialize context
     context.init(chain);
     log->info("Initialized swap chain");
+
+    // Load geometry
+    log->info("Loading model {}", geometry_path);
+    geometry_ = make_geometry(geometry_path);
+
+    // Fetch dimensions of model
+    glm::vec3 bbox_min, bbox_max;
+    geometry_->get_dimensions(bbox_min, bbox_max);
+    glm::dvec3 centroid = geometry_->get_centroid();
+
+    glm::vec3 dimensions = bbox_max - bbox_min,
+              center = (bbox_max + bbox_min) / 2.f;
+    log->info("Object dimensions: {}", glm::to_string(dimensions));
+    log->info("Object center: {}", glm::to_string(center));
+    log->info("Object centroid: {}", glm::to_string(centroid));
+
+    // Set state_
+    extra_inputs.get<bboxMax>() = bbox_max;
+    extra_inputs.get<bboxMin>() = bbox_min;
+
+    // Compute model scale, update state
+    state_->center = center;
+    state_->scale = 1. / dimensions.z;
+
+    // Update imageBuffer to have the geometry
+    imageBuffer->geometry(geometry_);
 }
 
 void viewer_window::run() {
