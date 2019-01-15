@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
     std::string geometry_path;
     std::string shader_path;
     int width, height;
+    bool use_make;
 
     // clang-format off
     po::options_description v_desc("Viewer options");
@@ -29,6 +30,7 @@ int main(int argc, char *argv[]) {
         ("shader,s", po::value(&shader_path)->default_value("glsl/gabor-noise-surface.glsl"), "Path to the shader program to use")
         ("width,W", po::value(&width)->default_value(1280), "Window width")
         ("height,H", po::value(&height)->default_value(960), "Window height")
+        ("use-make,m", po::bool_switch(&use_make), "Compile the target shader file using make first")
         ("help,h", "Show this help message");
     // clang-format on
 
@@ -62,7 +64,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize window
     try {
-        viewer_window window(log, width, height, geometry_path, shader_path);
+        viewer_window window(log, width, height, geometry_path, shader_path, use_make);
         window.run();
     } catch (gl::shader_compilation_error &sce) {
         log->critical("Failed to compile shader: {}", sce.log());

@@ -10,7 +10,6 @@ foreach(GLSL_FILE ${GLSL_SOURCES})
     get_filename_component(GLSL_FILE_BASE ${GLSL_FILE} NAME)
     set(GLSL_OUTPUT_FILE "${GLSL_OUTPUT}/${GLSL_FILE_BASE}")
 
-
     # Run command to find out dependencies
     execute_process(COMMAND sh -c "m4 -P -di ${GLSL_FILE} 2>&1 >/dev/null | grep -Po '(?<=input read from ).*$'"
         WORKING_DIRECTORY ${GLSL_SRC}
@@ -40,9 +39,9 @@ foreach(GLSL_FILE ${GLSL_SOURCES})
     endforeach()
 
     if(GLSL_DEPS EQUAL "")
-        message(STATUS "Adding glslify target for ${GLSL_FILE}")
+        message(STATUS "Adding glslm4 target for ${GLSL_FILE}")
     else()
-        message(STATUS "Adding glslify target for ${GLSL_FILE}: ${GLSL_DEPS}")
+        message(STATUS "Adding glslm4 target for ${GLSL_FILE}: ${GLSL_DEPS}")
     endif()
 
     add_custom_command(OUTPUT ${GLSL_OUTPUT_FILE}
@@ -52,7 +51,8 @@ foreach(GLSL_FILE ${GLSL_SOURCES})
         DEPENDS "${GLSL_DEPS};glsl-output-dir"
         WORKING_DIRECTORY ${GLSL_SRC})
 
-    list(APPEND GLSL_OUTPUT_FILES ${GLSL_OUTPUT_FILE})
+    add_custom_target(${GLSL_FILE_BASE} DEPENDS ${GLSL_OUTPUT_FILE})
+    list(APPEND GLSL_OUTPUT_FILES ${GLSL_FILE_BASE})
 endforeach()
 
 add_custom_target(glsl ALL DEPENDS ${GLSL_OUTPUT_FILES})

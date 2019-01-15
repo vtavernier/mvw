@@ -15,12 +15,61 @@
 
 #include "viewer_window.hpp"
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
+void viewer_window::compile_shader_source(const std::string &shader_path) {
+    state_->log->info("Compiling {} using make", shader_path);
+
+    int pid = fork();
+
+    if (pid == 0) {
+        size_t begin;
+        if ((begin = shader_path.find_last_of('/')) != std::string::npos) {
+            begin++;
+        } else {
+            begin = 0;
+        }
+
+        std::string basename(shader_path.begin() + begin, shader_path.end());
+        const char *args[] = {
+            "make",
+            basename.c_str(),
+            NULL
+        };
+
+        execvp("make", const_cast<char* const*>(args));
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+            throw std::runtime_error("Failed to compile shader source code");
+        }
+    }
+}
+
+void viewer_window::reload_shader() {
+    // Recompile shader
+    if (use_make_) {
+        compile_shader_source(shader_path_);
+    }
+
+    // Reinitialize chain
+    state_->reload();
+
+    state_->log->info("Reloaded swap-chain");
+}
+
 viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
                              int height, const std::string &geometry_path,
-                             const std::string &shader_path) {
+                             const std::string &shader_path, bool use_make)
+    : shader_path_(shader_path),
+      use_make_(use_make) {
     window_ =
         glfwCreateWindow(width, height, "Test model viewer", nullptr, nullptr);
 
@@ -89,6 +138,12 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
 
     // Create the image buffer
     auto imageBuffer(std::make_shared<buffers::geometry_buffer>("image"));
+
+    // Compile shader source if requested
+    if (use_make) {
+        compile_shader_source(shader_path);
+    }
+
     imageBuffer->source_file(shader_path);
 
     // Without a background, the buffer should also clear the previous contents
@@ -300,7 +355,7 @@ void viewer_window::glfw_key_callback(int key, int scancode, int action,
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window_, true);
         } else if (key == GLFW_KEY_F5) {
-            state_->reload();
+            reload_shader();
         }
     }
 }
