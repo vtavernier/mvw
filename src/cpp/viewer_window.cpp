@@ -212,6 +212,7 @@ void viewer_window::run() {
     // Defaults
     extra_inputs.get<gTilesize>() = state_->scale;
     extra_inputs.get<gSplats>() = 1;
+    extra_inputs.get<gF0>() = 1.0f;
 
     while (!glfwWindowShouldClose(window_)) {
         // Poll events
@@ -236,8 +237,10 @@ void viewer_window::run() {
 
         ImGui::SliderFloat("Tile size", &extra_inputs.get<gTilesize>(), 0.1f, 2.0f, "%2.3f", 1.0f);
         ImGui::SliderInt("Splats", &extra_inputs.get<gSplats>(), 1, 30, "%d");
-        ImGui::SliderFloat("F0", &extra_inputs.get<gF0>(), 0.001f, 10.0f, "%2.4f", 1.0f);
-        ImGui::SliderAngle("W0", &extra_inputs.get<gW0>(), 0.0f, 360.0f, "%2.2f");
+        ImGui::SliderFloat("F0", &extra_inputs.get<gF0>(), 0.001f, 10.0f, "%2.4f", 4.0f);
+
+        ImGui::SliderAngle("W0.x", &extra_inputs.get<gW0>().x, 0.0f, 360.0f, "%2.2f");
+        ImGui::SliderAngle("W0.y", &extra_inputs.get<gW0>().y, 0.0f, 360.0f, "%2.2f");
 
         ImGui::End();
 

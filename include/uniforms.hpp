@@ -11,7 +11,7 @@ DECLARE_UNIFORM(glm::vec3, bboxMin, "vec3");
 DECLARE_UNIFORM(GLfloat, gTilesize, "float");
 DECLARE_UNIFORM(GLint, gSplats, "int");
 DECLARE_UNIFORM(GLfloat, gF0, "float");
-DECLARE_UNIFORM(GLfloat, gW0, "float");
+DECLARE_UNIFORM(glm::vec2, gW0, "vec2");
 
 // We need a custom inputs type to pass the MVP matrix
 typedef shadertoy::shader_inputs<
