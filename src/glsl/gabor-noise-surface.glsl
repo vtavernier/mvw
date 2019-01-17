@@ -16,8 +16,9 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
     // Seed the point generator
     int splats;
     pg_state pstate;
+
     ivec3 count = ivec3(ceil((bboxMax - bboxMin) / _TILE_SIZE));
-    pg_seed(pstate, cell + count, count, 156237, gSplats);
+    pg_seed(pstate, cell, count, 156237, gSplats);
 
     for (int i = 0; i < pg_splats(pstate); ++i)
     {
@@ -37,7 +38,8 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
         td_point.xyz /= _TILE_SIZE;
 
         // Compute contribution
-        O += sign(td_point.w) * dk3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE);
+        if (abs(d) < _TILE_SIZE.x)
+            O += sign(td_point.w) * smoothstep(_TILE_SIZE.x, 0., abs(d)) * h3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE);
     }
 }
 
@@ -62,15 +64,23 @@ void mainImage(out vec4 O, in vec2 U)
     //debugRotGrid(O, vPosition, 0, _TILE_SIZE);
 
     // Grid-evaluate Gabor noise
-    gaborGrid(O, vPosition, 1, _TILE_SIZE);
-    debugGrid(O, vPosition, 0, _TILE_SIZE);
+    gaborGrid(O, bboxMin + vPosition, 2, _TILE_SIZE);
 
     // Normalize output
-    //O = sqrt(3.) * O / sqrt(float(gSplats));
+    O = 1. / sqrt(3.) * O / sqrt(float(gSplats));
+
+    //debugGrid(O, vPosition, 0, _TILE_SIZE);
 
     // Compute variance in O.a for renorm, using mipmap
-    //O.a = O.x * O.x;
+    O.a = O.x * O.x;
 
     // [0, 1] range
     O = .5 * O + .5;
+
+    // Shading for shape
+    vec3 direction = normalize(vec3(1., 0., 1.));
+    vec3 normal = normalize(mat3(mModel) * vNormal);
+    float diffuse = max(dot(normal, direction), 0.0);
+
+    O *= (.2 + .8 * max(diffuse, 0.));
 }
