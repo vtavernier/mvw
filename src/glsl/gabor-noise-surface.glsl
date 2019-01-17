@@ -10,8 +10,6 @@ m4_include(gabor/grid.glsl)
 #define W0VEC(w0) vec3(cos(w0.x)*cos(w0.y),sin(w0.x)*cos(w0.y),sin(w0.y))
 #define _TILE_SIZE vec3(gTilesize)
 
-#define off(v) vec3(v.x<0?-.5:.5,v.y<0?-.5:.5,v.z<0?-.5:.5)
-
 void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
     vec3 n = normalize(vNormal);
 
