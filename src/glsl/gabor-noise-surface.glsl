@@ -1,6 +1,6 @@
 m4_include(core/math.glsl)
 m4_include(core/hash.glsl)
-m4_include(prng/lcg.glsl)
+m4_include(prng/xorshift.glsl)
 m4_include(prng/poisson.glsl)
 m4_define(WHITE_POISSON,0)
 m4_include(pg/3d/white.glsl)
