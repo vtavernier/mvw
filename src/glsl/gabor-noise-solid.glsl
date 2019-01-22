@@ -32,14 +32,12 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
         // Project 3D point onto tangent plane
         vec3 v = td_point.xyz - P;
         float d = dot(v, n);
-        td_point.xyz = v - d * n;
 
         // Compute relative location
-        td_point.xyz /= _TILE_SIZE;
+        td_point.xyz = (P - td_point.xyz) / _TILE_SIZE;
 
         // Compute contribution
-        if (abs(d) < _TILE_SIZE.x)
-            O += sign(td_point.w) * smoothstep(_TILE_SIZE.x, 0., abs(d)) * h3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE, 0.);
+        O += h3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE, M_PI * (2. * td_point.w - 1. + 2. * dot(W0VEC(gW0), d * n)));
     }
 }
 

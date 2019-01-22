@@ -236,9 +236,9 @@ void viewer_window::run() {
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
 
-        ImGui::SliderFloat("Tile size", &extra_inputs.get<gTilesize>(), 0.01f, 2.0f, "%2.3f", 1.0f);
+        ImGui::SliderFloat("Tile size", &extra_inputs.get<gTilesize>(), 0.01f, 10.0f, "%2.3f", 5.0f);
         ImGui::SliderInt("Splats", &extra_inputs.get<gSplats>(), 1, 30, "%d");
-        ImGui::SliderFloat("F0", &extra_inputs.get<gF0>(), 0.001f, 10.0f, "%2.4f", 4.0f);
+        ImGui::SliderFloat("F0", &extra_inputs.get<gF0>(), 0.001f, 100.0f, "%2.4f", 7.0f);
 
         ImGui::SliderAngle("W0.x", &extra_inputs.get<gW0>().x, 0.0f, 360.0f, "%2.2f");
         ImGui::SliderAngle("W0.y", &extra_inputs.get<gW0>().y, 0.0f, 360.0f, "%2.2f");
