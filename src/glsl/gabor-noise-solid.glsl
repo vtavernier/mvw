@@ -80,5 +80,5 @@ void mainImage(out vec4 O, in vec2 U)
     vec3 normal = normalize(mat3(mModel) * vNormal);
     float diffuse = max(dot(normal, direction), 0.0);
 
-    O.rgb *= (.2 + .8 * max(diffuse, 0.));
+    //O.rgb *= (.2 + .8 * max(diffuse, 0.));
 }

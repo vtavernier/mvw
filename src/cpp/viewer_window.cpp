@@ -260,6 +260,7 @@ void viewer_window::run() {
     extra_inputs.get<gTilesize>() = state_->scale;
     extra_inputs.get<gSplats>() = 1;
     extra_inputs.get<gF0>() = 1.0f;
+    extra_inputs.get<cFilterLod>() = 2.0f;
 
     while (!glfwWindowShouldClose(window_)) {
         // Poll events
@@ -288,6 +289,8 @@ void viewer_window::run() {
 
         ImGui::SliderAngle("W0.x", &extra_inputs.get<gW0>().x, 0.0f, 360.0f, "%2.2f");
         ImGui::SliderAngle("W0.y", &extra_inputs.get<gW0>().y, 0.0f, 360.0f, "%2.2f");
+
+        ImGui::SliderFloat("C. LOD", &extra_inputs.get<cFilterLod>(), 1.0f, 8.0f, "%2.2f");
 
         ImGui::End();
 

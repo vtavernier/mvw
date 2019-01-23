@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     std::string geometry_path;
     std::string shader_path;
     std::string postprocess_path;
-    int width, height;
+    int width, height = 1024;
     bool use_make;
 
     // clang-format off
@@ -30,8 +30,8 @@ int main(int argc, char *argv[]) {
         ("geometry,g", po::value(&geometry_path)->default_value("../models/mcguire/bunny/bunny.obj"), "Path to the geometry to load")
         ("shader,s", po::value(&shader_path)->default_value("glsl/gabor-noise-surface.glsl"), "Path to the shader program to use")
         ("postprocess,p", po::value(&postprocess_path)->default_value(""), "Path to the postprocessing shader to use")
-        ("width,W", po::value(&width)->default_value(1280), "Window width")
-        ("height,H", po::value(&height)->default_value(960), "Window height")
+        ("width,W", po::value(&width)->default_value(height + window_width), "Window width")
+        ("height,H", po::value(&height)->default_value(height), "Window height")
         ("use-make,m", po::bool_switch(&use_make), "Compile the target shader file using make first")
         ("help,h", "Show this help message");
     // clang-format on

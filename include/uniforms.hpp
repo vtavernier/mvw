@@ -13,6 +13,8 @@ DECLARE_UNIFORM(GLint, gSplats, "int");
 DECLARE_UNIFORM(GLfloat, gF0, "float");
 DECLARE_UNIFORM(glm::vec2, gW0, "vec2");
 
+DECLARE_UNIFORM(GLfloat, cFilterLod, "float");
+
 // We need a custom inputs type to pass the MVP matrix
 typedef shadertoy::shader_inputs<
         mModel,
@@ -24,5 +26,6 @@ typedef shadertoy::shader_inputs<
         gTilesize,
         gSplats,
         gF0,
-        gW0
+        gW0,
+        cFilterLod
     > geometry_inputs_t;
