@@ -23,6 +23,7 @@ struct viewer_state {
 
     shadertoy::render_context context;
     shadertoy::swap_chain chain;
+    shadertoy::swap_chain geometry_chain;
     shadertoy::rsize render_size;
 
     geometry_inputs_t extra_inputs;

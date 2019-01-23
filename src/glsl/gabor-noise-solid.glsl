@@ -73,12 +73,12 @@ void mainImage(out vec4 O, in vec2 U)
     O.a = O.x * O.x;
 
     // [0, 1] range
-    O = .5 * O + .5;
+    O.rgb = .5 * O.rgb + .5;
 
     // Shading for shape
     vec3 direction = normalize(vec3(1., 0., 1.));
     vec3 normal = normalize(mat3(mModel) * vNormal);
     float diffuse = max(dot(normal, direction), 0.0);
 
-    O *= (.2 + .8 * max(diffuse, 0.));
+    O.rgb *= (.2 + .8 * max(diffuse, 0.));
 }

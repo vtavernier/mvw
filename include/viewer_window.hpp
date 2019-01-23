@@ -12,8 +12,15 @@
 class viewer_window {
     GLFWwindow *window_;
     std::unique_ptr<viewer_state> state_;
+
+    std::shared_ptr<shadertoy::buffers::geometry_buffer> geometry_buffer_;
+    std::shared_ptr<shadertoy::members::basic_member> geometry_target_;
+    std::shared_ptr<shadertoy::buffers::toy_buffer> postprocess_buffer_;
+    std::shared_ptr<shadertoy::members::screen_member> main_screen_;
+
     std::shared_ptr<mvw_geometry> geometry_;
     const std::string &shader_path_;
+    const std::string &postprocess_path_;
     const bool use_make_;
 
     static void glfw_window_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
@@ -37,7 +44,7 @@ class viewer_window {
    public:
     viewer_window(std::shared_ptr<spd::logger> log, int width, int height,
                   const std::string &geometry_path, const std::string &shader_path,
-                  bool use_make);
+                  const std::string &postprocess_path, bool use_make);
 
     void run();
 

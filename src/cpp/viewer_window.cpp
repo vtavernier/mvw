@@ -57,6 +57,7 @@ void viewer_window::reload_shader() {
     // Recompile shader
     if (use_make_) {
         compile_shader_source(shader_path_);
+        compile_shader_source(postprocess_path_);
     }
 
     // Reinitialize chain
@@ -67,8 +68,11 @@ void viewer_window::reload_shader() {
 
 viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
                              int height, const std::string &geometry_path,
-                             const std::string &shader_path, bool use_make)
+                             const std::string &shader_path,
+                             const std::string &postprocess_path,
+                             bool use_make)
     : shader_path_(shader_path),
+      postprocess_path_(postprocess_path),
       use_make_(use_make) {
     window_ =
         glfwCreateWindow(width, height, "Test model viewer", nullptr, nullptr);
@@ -80,7 +84,7 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     glfwMakeContextCurrent(window_);
     glfwSwapInterval(1);
 
-    utils::log::shadertoy()->set_level(spdlog::level::info);
+    utils::log::shadertoy()->set_level(spdlog::level::debug);
 
     state_ = std::make_unique<viewer_state>(log);
     glfwSetWindowUserPointer(window_, this);
@@ -120,37 +124,52 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     context.buffer_template().shader_inputs().emplace("geometry",
                                                       &extra_inputs);
 
-    // The default vertex shader is not sufficient, we replace it with
-    // our own
-    context.buffer_template()[GL_VERTEX_SHADER] =
-        compiler::shader_template::parse_file("../shaders/vertex.glsl");
+    // Recompile the buffer template
+    context.buffer_template().compile(GL_VERTEX_SHADER);
+
+    // The default vertex shader is not sufficient, we replace it with our own
+    auto g_buffer_template(std::make_shared<compiler::program_template>());
+    auto preprocessor_defines(std::make_shared<compiler::preprocessor_defines>());
+
+    // Add LIBSHADERTOY definition
+    preprocessor_defines->definitions().emplace("LIBSHADERTOY", "1");
+
+    // Add uniform definitions
+    g_buffer_template->shader_defines().emplace("glsl", preprocessor_defines);
+    g_buffer_template->shader_inputs().emplace("shadertoy", &context.state());
+    g_buffer_template->shader_inputs().emplace("geometry", &extra_inputs);
+
+    // Load customized shader templates
+    g_buffer_template->emplace(GL_VERTEX_SHADER,
+        compiler::shader_template::parse_file("../shaders/vertex.glsl"));
 
     // Same for fragment shader
-    context.buffer_template()[GL_FRAGMENT_SHADER] =
-        compiler::shader_template::parse_file("../shaders/fragment.glsl");
+    g_buffer_template->emplace(GL_FRAGMENT_SHADER,
+        compiler::shader_template::parse_file("../shaders/fragment.glsl"));
 
     // Force compilation of new template
-    context.buffer_template().compile(GL_VERTEX_SHADER);
+    g_buffer_template->compile(GL_VERTEX_SHADER);
 
     // Set the context parameters (render size and some uniforms)
     state_->render_size = rsize(width - window_width, height);
     context.state().get<iTimeDelta>() = 1.0 / 60.0;
     context.state().get<iFrameRate>() = 60.0;
 
-    // Create the image buffer
-    auto imageBuffer(std::make_shared<buffers::geometry_buffer>("image"));
+    // Create the geometry buffer
+    geometry_buffer_ = std::make_shared<buffers::geometry_buffer>("geometry");
+    geometry_buffer_->override_program(g_buffer_template);
 
     // Compile shader source if requested
     if (use_make) {
         compile_shader_source(shader_path);
     }
 
-    imageBuffer->source_file(shader_path);
+    geometry_buffer_->source_file(shader_path);
 
     // Without a background, the buffer should also clear the previous contents
-    imageBuffer->clear_color({.15f, .15f, .15f, 1.f});
-    imageBuffer->clear_depth(1.f);
-    imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    geometry_buffer_->clear_color({.15f, .15f, .15f, 1.f});
+    geometry_buffer_->clear_depth(1.f);
+    geometry_buffer_->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Also we need depth test
     gl_call(glEnable, GL_DEPTH_TEST);
@@ -159,16 +178,48 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Smooth wireframe
     gl_call(glEnable, GL_LINE_SMOOTH);
 
-    // Add the image buffer to the swap chain, at the given size
-    // The default_framebuffer policy makes this buffer draw directly to
-    // the window_ instead of using a texture that is then copied to the
-    // screen.
-    chain.emplace_back(imageBuffer, make_size_ref(state_->render_size),
-                       member_swap_policy::default_framebuffer);
+    bool has_postprocess = !postprocess_path.empty();
+
+    // Add the geometry buffer to the swap chain, at the given size
+    geometry_target_ = chain.emplace_back(geometry_buffer_,
+                                          make_size_ref(state_->render_size),
+                                          member_swap_policy::single_buffer);
+
+    // Add the geometry buffer to the geometry-only chain
+    // TODO: set viewport for geometry_chain
+    state_->geometry_chain.emplace_back(geometry_buffer_,
+                                        make_size_ref(state_->render_size),
+                                        member_swap_policy::default_framebuffer);
+
+    if (has_postprocess) {
+        if (use_make) {
+            compile_shader_source(postprocess_path);
+        }
+
+        // Add the postprocess buffer
+        postprocess_buffer_ = std::make_shared<buffers::toy_buffer>("postprocess");
+        postprocess_buffer_->source_file(postprocess_path);
+
+        // The postprocess pass has the output of the geometry pass as input 0
+        auto postprocess_input(std::make_shared<shadertoy::inputs::buffer_input>(geometry_target_));
+        postprocess_input->min_filter(GL_LINEAR_MIPMAP_LINEAR);
+        postprocess_buffer_->inputs().emplace_back(postprocess_input);
+
+        // Render the output of the postprocess pass to the default framebuffer
+        chain.emplace_back(postprocess_buffer_,
+                           make_size_ref(state_->render_size),
+                           member_swap_policy::single_buffer);
+    }
+
+    main_screen_ = members::make_screen(window_width, 0, make_size_ref(state_->render_size));
+    chain.push_back(main_screen_);
 
     // Initialize context
     context.init(chain);
-    log->info("Initialized swap chain");
+    log->info("Initialized main swap chain");
+
+    context.init(state_->geometry_chain);
+    log->info("Initialized geometry-only swap chain");
 
     // Load geometry
     log->info("Loading model {}", geometry_path);
@@ -193,19 +244,14 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     state_->center = center;
     state_->scale = 1. / dimensions.z;
 
-    // Update imageBuffer to have the geometry
-    imageBuffer->geometry(geometry_);
+    // Update geometry_buffer_ to have the geometry
+    geometry_buffer_->geometry(geometry_);
 }
 
 void viewer_window::run() {
     auto &context(state_->context);
     auto &chain(state_->chain);
     auto &extra_inputs(state_->extra_inputs);
-    auto imageBuffer(
-        std::static_pointer_cast<shadertoy::buffers::geometry_buffer>(
-            std::static_pointer_cast<shadertoy::members::buffer_member>(
-                chain.members().back())
-                ->buffer()));
 
     // Rendering time
     double t = 0.;
@@ -252,10 +298,6 @@ void viewer_window::run() {
         context.state().get<iTime>() = t;
         context.state().get<iFrame>() = state_->frame_count;
 
-        // Set viewport
-        gl_call(glViewport, window_width, 0, state_->render_size.width,
-                state_->render_size.height);
-
         // Projection matrix display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = glm::perspective(
             glm::radians(25.0f), (float)state_->render_size.width /
@@ -287,18 +329,18 @@ void viewer_window::run() {
         extra_inputs.get<bWireframe>() = GL_FALSE;
 
         // First call: clear everything
-        imageBuffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        geometry_buffer_->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // Render the swap chain
         gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_FILL);
         context.render(chain);
 
         if (state_->draw_wireframe) {
-            // Second call: render wireframe on top
+            // Second call: render wireframe on top without post-processing
             extra_inputs.get<bWireframe>() = GL_TRUE;
-            imageBuffer->clear_bits(0);
+            geometry_buffer_->clear_bits(0);
             // Render swap chain
             gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_LINE);
-            context.render(chain);
+            context.render(state_->geometry_chain);
         }
 
         // Render ImGui overlay
