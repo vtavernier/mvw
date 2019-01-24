@@ -37,7 +37,7 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
         td_point.xyz = (P - td_point.xyz) / _TILE_SIZE;
 
         // Compute contribution
-        O += h3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE, M_PI * (2. * td_point.w - 1. + 2. * dot(W0VEC(gW0), d * n)));
+        O += h3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE, M_PI * (2. * td_point.w - 1. - 2. * dot(W0VEC(gW0), d * n)));
     }
 }
 
