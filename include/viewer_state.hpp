@@ -1,11 +1,12 @@
 #ifndef _VIEWER_STATE_HPP_
 #define _VIEWER_STATE_HPP_
 
-#include <shadertoy.hpp>
+#include <shadertoy/utils/log.hpp>
+
+#include <glm/vec3.hpp>
 
 #include "config.hpp"
 #include "log.hpp"
-#include "uniforms.hpp"
 
 struct viewer_state {
     bool draw_wireframe;
@@ -21,18 +22,9 @@ struct viewer_state {
     glm::vec3 center;
     float scale;
 
-    shadertoy::render_context context;
-    shadertoy::swap_chain chain;
-    shadertoy::swap_chain geometry_chain;
-    shadertoy::rsize render_size;
-
-    geometry_inputs_t extra_inputs;
-
     std::shared_ptr<spd::logger> log;
 
     viewer_state(std::shared_ptr<spd::logger> log);
-
-    void reload();
 
     void update_rotation(bool previous_rotate);
 

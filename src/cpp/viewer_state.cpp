@@ -15,17 +15,7 @@ viewer_state::viewer_state(std::shared_ptr<spd::logger> log)
       frame_count(0),
       center(0.f),
       scale(0.f),
-      context(),
-      chain(),
-      geometry_chain(),
-      render_size(),
-      extra_inputs(),
       log(log) {}
-
-void viewer_state::reload() {
-    context.init(chain);
-    context.init(geometry_chain);
-}
 
 void viewer_state::update_rotation(bool previous_rotate) {
     if (previous_rotate && !rotate_camera)

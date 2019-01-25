@@ -15,14 +15,17 @@
 
 #include "viewer_window.hpp"
 
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
 void viewer_window::compile_shader_source(const std::string &shader_path) {
+    if (shader_path.empty())
+        return;
+
     state_->log->info("Compiling {} using make", shader_path);
 
     int pid = fork();
@@ -36,13 +39,9 @@ void viewer_window::compile_shader_source(const std::string &shader_path) {
         }
 
         std::string basename(shader_path.begin() + begin, shader_path.end());
-        const char *args[] = {
-            "make",
-            basename.c_str(),
-            NULL
-        };
+        const char *args[] = {"make", basename.c_str(), NULL};
 
-        execvp("make", const_cast<char* const*>(args));
+        execvp("make", const_cast<char *const *>(args));
     } else {
         int status;
         waitpid(pid, &status, 0);
@@ -54,14 +53,14 @@ void viewer_window::compile_shader_source(const std::string &shader_path) {
 }
 
 void viewer_window::reload_shader() {
-    // Recompile shader
+    // Recompile shaders
     if (use_make_) {
         compile_shader_source(shader_path_);
         compile_shader_source(postprocess_path_);
     }
 
     // Reinitialize chain
-    state_->reload();
+    gl_state_->load_chain(shader_path_, postprocess_path_);
 
     state_->log->info("Reloaded swap-chain");
 }
@@ -69,8 +68,7 @@ void viewer_window::reload_shader() {
 viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
                              int height, const std::string &geometry_path,
                              const std::string &shader_path,
-                             const std::string &postprocess_path,
-                             bool use_make)
+                             const std::string &postprocess_path, bool use_make)
     : shader_path_(shader_path),
       postprocess_path_(postprocess_path),
       use_make_(use_make) {
@@ -86,7 +84,6 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
 
     utils::log::shadertoy()->set_level(spdlog::level::debug);
 
-    state_ = std::make_unique<viewer_state>(log);
     glfwSetWindowUserPointer(window_, this);
 
     // Set callbacks
@@ -113,63 +110,20 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // No rounded windows
     ImGui::GetStyle().WindowRounding = 0.0f;
 
-    // Get reference to context and swap chain
-    auto &context(state_->context);
-    auto &chain(state_->chain);
-
-    // Extra uniform inputs storage
-    auto &extra_inputs(state_->extra_inputs);
-
-    // Register the custom inputs with the buffer template
-    context.buffer_template().shader_inputs().emplace("geometry",
-                                                      &extra_inputs);
-
-    // Recompile the buffer template
-    context.buffer_template().compile(GL_VERTEX_SHADER);
-
-    // The default vertex shader is not sufficient, we replace it with our own
-    auto g_buffer_template(std::make_shared<compiler::program_template>());
-    auto preprocessor_defines(std::make_shared<compiler::preprocessor_defines>());
-
-    // Add LIBSHADERTOY definition
-    preprocessor_defines->definitions().emplace("LIBSHADERTOY", "1");
-
-    // Add uniform definitions
-    g_buffer_template->shader_defines().emplace("glsl", preprocessor_defines);
-    g_buffer_template->shader_inputs().emplace("shadertoy", &context.state());
-    g_buffer_template->shader_inputs().emplace("geometry", &extra_inputs);
-
-    // Load customized shader templates
-    g_buffer_template->emplace(GL_VERTEX_SHADER,
-        compiler::shader_template::parse_file("../shaders/vertex.glsl"));
-
-    // Same for fragment shader
-    g_buffer_template->emplace(GL_FRAGMENT_SHADER,
-        compiler::shader_template::parse_file("../shaders/fragment.glsl"));
-
-    // Force compilation of new template
-    g_buffer_template->compile(GL_VERTEX_SHADER);
-
-    // Set the context parameters (render size and some uniforms)
-    state_->render_size = rsize(width - window_width, height);
-    context.state().get<iTimeDelta>() = 1.0 / 60.0;
-    context.state().get<iFrameRate>() = 60.0;
-
-    // Create the geometry buffer
-    geometry_buffer_ = std::make_shared<buffers::geometry_buffer>("geometry");
-    geometry_buffer_->override_program(g_buffer_template);
+    // Load static state
+    state_ = std::make_unique<viewer_state>(log);
 
     // Compile shader source if requested
     if (use_make) {
         compile_shader_source(shader_path);
+        compile_shader_source(postprocess_path);
     }
 
-    geometry_buffer_->source_file(shader_path);
+    // Load OpenGL dependent state
+    gl_state_ = std::make_unique<gl_state>(log, width, height, geometry_path);
 
-    // Without a background, the buffer should also clear the previous contents
-    geometry_buffer_->clear_color({.15f, .15f, .15f, 1.f});
-    geometry_buffer_->clear_depth(1.f);
-    geometry_buffer_->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Load the initial state
+    gl_state_->load_chain(shader_path, postprocess_path);
 
     // Also we need depth test
     gl_call(glEnable, GL_DEPTH_TEST);
@@ -178,57 +132,11 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Smooth wireframe
     gl_call(glEnable, GL_LINE_SMOOTH);
 
-    bool has_postprocess = !postprocess_path.empty();
-
-    // Add the geometry buffer to the swap chain, at the given size
-    geometry_target_ = chain.emplace_back(geometry_buffer_,
-                                          make_size_ref(state_->render_size),
-                                          member_swap_policy::single_buffer);
-
-    // Add the geometry buffer to the geometry-only chain
-    // TODO: set viewport for geometry_chain
-    state_->geometry_chain.emplace_back(geometry_buffer_,
-                                        make_size_ref(state_->render_size),
-                                        member_swap_policy::default_framebuffer);
-
-    if (has_postprocess) {
-        if (use_make) {
-            compile_shader_source(postprocess_path);
-        }
-
-        // Add the postprocess buffer
-        postprocess_buffer_ = std::make_shared<buffers::toy_buffer>("postprocess");
-        postprocess_buffer_->source_file(postprocess_path);
-
-        // The postprocess pass has the output of the geometry pass as input 0
-        auto postprocess_input(std::make_shared<shadertoy::inputs::buffer_input>(geometry_target_));
-        postprocess_input->min_filter(GL_LINEAR_MIPMAP_LINEAR);
-        postprocess_buffer_->inputs().emplace_back(postprocess_input);
-
-        // Render the output of the postprocess pass to the default framebuffer
-        chain.emplace_back(postprocess_buffer_,
-                           make_size_ref(state_->render_size),
-                           member_swap_policy::single_buffer);
-    }
-
-    main_screen_ = members::make_screen(window_width, 0, make_size_ref(state_->render_size));
-    chain.push_back(main_screen_);
-
-    // Initialize context
-    context.init(chain);
-    log->info("Initialized main swap chain");
-
-    context.init(state_->geometry_chain);
-    log->info("Initialized geometry-only swap chain");
-
-    // Load geometry
-    log->info("Loading model {}", geometry_path);
-    geometry_ = make_geometry(geometry_path);
-
-    // Fetch dimensions of model
+    // Compute model scale, update state
+    //  Fetch dimensions of model
     glm::vec3 bbox_min, bbox_max;
-    geometry_->get_dimensions(bbox_min, bbox_max);
-    glm::dvec3 centroid = geometry_->get_centroid();
+    gl_state_->geometry->get_dimensions(bbox_min, bbox_max);
+    glm::dvec3 centroid = gl_state_->geometry->get_centroid();
 
     glm::vec3 dimensions = bbox_max - bbox_min,
               center = (bbox_max + bbox_min) / 2.f;
@@ -236,31 +144,23 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     log->info("Object center: {}", glm::to_string(center));
     log->info("Object centroid: {}", glm::to_string(centroid));
 
-    // Set state_
-    extra_inputs.get<bboxMax>() = bbox_max;
-    extra_inputs.get<bboxMin>() = bbox_min;
+    //  Set state_
+    gl_state_->extra_inputs.get<bboxMax>() = bbox_max;
+    gl_state_->extra_inputs.get<bboxMin>() = bbox_min;
 
-    // Compute model scale, update state
     state_->center = center;
     state_->scale = 1. / dimensions.z;
-
-    // Update geometry_buffer_ to have the geometry
-    geometry_buffer_->geometry(geometry_);
 }
 
 void viewer_window::run() {
-    auto &context(state_->context);
-    auto &chain(state_->chain);
-    auto &extra_inputs(state_->extra_inputs);
-
     // Rendering time
     double t = 0.;
 
     // Defaults
-    extra_inputs.get<gTilesize>() = state_->scale;
-    extra_inputs.get<gSplats>() = 1;
-    extra_inputs.get<gF0>() = 1.0f;
-    extra_inputs.get<cFilterLod>() = 2.0f;
+    gl_state_->extra_inputs.get<gTilesize>() = state_->scale;
+    gl_state_->extra_inputs.get<gSplats>() = 1;
+    gl_state_->extra_inputs.get<gF0>() = 1.0f;
+    gl_state_->extra_inputs.get<cFilterLod>() = 2.0f;
 
     while (!glfwWindowShouldClose(window_)) {
         // Poll events
@@ -273,7 +173,7 @@ void viewer_window::run() {
 
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize(
-            ImVec2(window_width, state_->render_size.height));
+            ImVec2(window_width, gl_state_->render_size.height));
         ImGui::Begin("mvw", NULL,
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
@@ -283,14 +183,21 @@ void viewer_window::run() {
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
 
-        ImGui::SliderFloat("Tile size", &extra_inputs.get<gTilesize>(), 0.01f, 10.0f, "%2.3f", 5.0f);
-        ImGui::SliderInt("Splats", &extra_inputs.get<gSplats>(), 1, 30, "%d");
-        ImGui::SliderFloat("F0", &extra_inputs.get<gF0>(), 0.001f, 100.0f, "%2.4f", 7.0f);
+        ImGui::SliderFloat("Tile size",
+                           &gl_state_->extra_inputs.get<gTilesize>(), 0.01f,
+                           10.0f, "%2.3f", 5.0f);
+        ImGui::SliderInt("Splats", &gl_state_->extra_inputs.get<gSplats>(), 1,
+                         30, "%d");
+        ImGui::SliderFloat("F0", &gl_state_->extra_inputs.get<gF0>(), 0.001f,
+                           100.0f, "%2.4f", 7.0f);
 
-        ImGui::SliderAngle("W0.x", &extra_inputs.get<gW0>().x, 0.0f, 360.0f, "%2.2f");
-        ImGui::SliderAngle("W0.y", &extra_inputs.get<gW0>().y, 0.0f, 360.0f, "%2.2f");
+        ImGui::SliderAngle("W0.x", &gl_state_->extra_inputs.get<gW0>().x, 0.0f,
+                           360.0f, "%2.2f");
+        ImGui::SliderAngle("W0.y", &gl_state_->extra_inputs.get<gW0>().y, 0.0f,
+                           360.0f, "%2.2f");
 
-        ImGui::SliderFloat("C. LOD", &extra_inputs.get<cFilterLod>(), 1.0f, 8.0f, "%2.2f");
+        ImGui::SliderFloat("C. LOD", &gl_state_->extra_inputs.get<cFilterLod>(),
+                           1.0f, 8.0f, "%2.2f");
 
         ImGui::End();
 
@@ -298,13 +205,13 @@ void viewer_window::run() {
         ImGui::Render();
 
         // Update uniforms
-        context.state().get<iTime>() = t;
-        context.state().get<iFrame>() = state_->frame_count;
+        gl_state_->context.state().get<iTime>() = t;
+        gl_state_->context.state().get<iFrame>() = state_->frame_count;
 
         // Projection matrix display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = glm::perspective(
-            glm::radians(25.0f), (float)state_->render_size.width /
-                                     (float)state_->render_size.height,
+            glm::radians(25.0f), (float)gl_state_->render_size.width /
+                                     (float)gl_state_->render_size.height,
             0.1f, 100.0f);
 
         // Camera matrix
@@ -326,25 +233,13 @@ void viewer_window::run() {
         Model = glm::translate(Model, -state_->center);
 
         // Our ModelViewProjection : multiplication of our 3 matrices
-        extra_inputs.get<mModel>() = Model;
-        extra_inputs.get<mView>() = View;
-        extra_inputs.get<mProj>() = Projection;
-        extra_inputs.get<bWireframe>() = GL_FALSE;
+        gl_state_->extra_inputs.get<mModel>() = Model;
+        gl_state_->extra_inputs.get<mView>() = View;
+        gl_state_->extra_inputs.get<mProj>() = Projection;
+        gl_state_->extra_inputs.get<bWireframe>() = GL_FALSE;
 
-        // First call: clear everything
-        geometry_buffer_->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // Render the swap chain
-        gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_FILL);
-        context.render(chain);
-
-        if (state_->draw_wireframe) {
-            // Second call: render wireframe on top without post-processing
-            extra_inputs.get<bWireframe>() = GL_TRUE;
-            geometry_buffer_->clear_bits(0);
-            // Render swap chain
-            gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_LINE);
-            context.render(state_->geometry_chain);
-        }
+        // Render current revision
+        gl_state_->render(state_->draw_wireframe);
 
         // Render ImGui overlay
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -361,6 +256,7 @@ void viewer_window::run() {
 viewer_window::~viewer_window() {
     if (window_) {
         state_ = {};
+        gl_state_ = {};
 
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -394,8 +290,8 @@ void viewer_window::glfw_mouse_button_callback(int button, int action,
 }
 
 void viewer_window::glfw_set_framebuffer_size(int width, int height) {
-    state_->render_size = shadertoy::rsize(width - window_width, height);
-    state_->context.allocate_textures(state_->chain);
+    gl_state_->render_size = shadertoy::rsize(width - window_width, height);
+    gl_state_->allocate_textures();
 }
 
 void viewer_window::glfw_key_callback(int key, int scancode, int action,
@@ -413,7 +309,7 @@ void viewer_window::glfw_char_callback(unsigned int codepoint) {
     if (codepoint == 'w') {
         state_->draw_wireframe = !state_->draw_wireframe;
     } else if (codepoint == 'r') {
-        state_->reload();
+        reload_shader();
     }
 }
 
@@ -465,7 +361,8 @@ void viewer_window::glfw_window_cursor_pos_callback(GLFWwindow *window,
 }
 
 void viewer_window::glfw_window_scroll_callback(GLFWwindow *window,
-                                                double xoffset, double yoffset) {
+                                                double xoffset,
+                                                double yoffset) {
     reinterpret_cast<viewer_window *>(glfwGetWindowUserPointer(window))
         ->glfw_scroll_callback(xoffset, yoffset);
 }
