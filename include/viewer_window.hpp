@@ -21,6 +21,8 @@ class viewer_window {
     const std::string &postprocess_path_;
     const bool use_make_;
 
+    int viewed_revision_;
+
     static void glfw_window_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
     static void glfw_window_set_framebuffer_size(GLFWwindow *window, int width, int height);
     static void glfw_window_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);

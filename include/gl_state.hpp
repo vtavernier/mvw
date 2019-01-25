@@ -32,6 +32,7 @@ struct gl_state {
         shadertoy::swap_chain chain;
         shadertoy::swap_chain geometry_chain;
         std::shared_ptr<shadertoy::buffers::geometry_buffer> geometry_buffer;
+        std::shared_ptr<shadertoy::buffers::toy_buffer> postprocess_buffer;
 
         chain_instance(std::shared_ptr<spd::logger> log,
                        std::shared_ptr<shadertoy::compiler::program_template>
@@ -56,6 +57,8 @@ struct gl_state {
                     const std::string &postprocess_path);
 
     void render(bool draw_wireframe, int back_revision = 0);
+
+    void get_render_ms(float times[2], int back_revision = 0);
 
     void allocate_textures();
 

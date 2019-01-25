@@ -84,8 +84,7 @@ gl_state::chain_instance::chain_instance(
 
     if (has_postprocess) {
         // Add the postprocess buffer
-        auto postprocess_buffer =
-            std::make_shared<buffers::toy_buffer>("postprocess");
+        postprocess_buffer = std::make_shared<buffers::toy_buffer>("postprocess");
         postprocess_buffer->source_file(postprocess_path);
 
         // The postprocess pass has the output of the geometry pass as input 0
@@ -142,6 +141,18 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
 void gl_state::render(bool draw_wireframe, int back_revision)
 {
     chains.at(chains.size() + back_revision - 1).render(context, extra_inputs, draw_wireframe);
+}
+
+void gl_state::get_render_ms(float times[2], int back_revision)
+{
+    auto &chain(chains.at(chains.size() + back_revision - 1));
+
+    times[0] = chain.geometry_buffer->elapsed_time() / 1.0e6f;
+
+    if (chain.postprocess_buffer)
+        times[1] = chain.postprocess_buffer->elapsed_time() / 1.0e6f;
+    else
+        times[1] = 0.0f;
 }
 
 void gl_state::allocate_textures()

@@ -4,6 +4,8 @@
 
 #include <shadertoy.hpp>
 
+#include <numeric>
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -71,7 +73,8 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
                              const std::string &postprocess_path, bool use_make)
     : shader_path_(shader_path),
       postprocess_path_(postprocess_path),
-      use_make_(use_make) {
+      use_make_(use_make),
+      viewed_revision_(0) {
     window_ =
         glfwCreateWindow(width, height, "Test model viewer", nullptr, nullptr);
 
@@ -162,6 +165,10 @@ void viewer_window::run() {
     gl_state_->extra_inputs.get<gF0>() = 1.0f;
     gl_state_->extra_inputs.get<cFilterLod>() = 2.0f;
 
+    std::vector<float> runtime_acc(60, 0.0f);
+    std::vector<float> runtime_p_acc(60, 0.0f);
+    int runtime_acc_idx = -1;
+
     while (!glfwWindowShouldClose(window_)) {
         // Poll events
         glfwPollEvents();
@@ -189,6 +196,10 @@ void viewer_window::run() {
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
 
+        ImGui::SliderInt("Revision", &viewed_revision_, -(gl_state_->chains.size() - 1), 0, "%d");
+
+        ImGui::Separator();
+
         ImGui::SliderFloat("Tile size",
                            &gl_state_->extra_inputs.get<gTilesize>(), 0.01f,
                            10.0f, "%2.3f", 5.0f);
@@ -202,8 +213,31 @@ void viewer_window::run() {
         ImGui::SliderAngle("W0.y", &gl_state_->extra_inputs.get<gW0>().y, 0.0f,
                            360.0f, "%2.2f");
 
+        ImGui::Separator();
+
         ImGui::SliderFloat("C. LOD", &gl_state_->extra_inputs.get<cFilterLod>(),
                            1.0f, 8.0f, "%2.2f");
+
+        ImGui::Separator();
+
+        char label_buf[30];
+        char overlay_buf[30];
+
+        {
+            auto mean = std::accumulate(runtime_acc.begin(), runtime_acc.end(), 0.0f)
+                / runtime_acc.size();
+            sprintf(label_buf, "N %2.3fms", runtime_acc[runtime_acc_idx]);
+            sprintf(overlay_buf, "a %2.3fms", mean);
+            ImGui::PlotHistogram(label_buf, runtime_acc.data(), runtime_acc.size(), 0, overlay_buf);
+        }
+
+        if (!postprocess_path_.empty()) {
+            auto mean = std::accumulate(runtime_p_acc.begin(), runtime_p_acc.end(), 0.0f)
+                / runtime_acc.size();
+            sprintf(label_buf, "P %2.3fms", runtime_p_acc[runtime_acc_idx]);
+            sprintf(overlay_buf, "a %2.3fms", mean);
+            ImGui::PlotHistogram(label_buf, runtime_p_acc.data(), runtime_p_acc.size(), 0, overlay_buf);
+        }
 
         ImGui::End();
 
@@ -245,13 +279,20 @@ void viewer_window::run() {
         gl_state_->extra_inputs.get<bWireframe>() = GL_FALSE;
 
         // Render current revision
-        gl_state_->render(state_->draw_wireframe);
+        gl_state_->render(state_->draw_wireframe, viewed_revision_);
 
         // Render ImGui overlay
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Buffer swapping
         glfwSwapBuffers(window_);
+
+        // Measure time
+        float ts[2];
+        gl_state_->get_render_ms(ts, viewed_revision_);
+        runtime_acc[(runtime_acc_idx = (runtime_acc_idx + 1) %
+                     runtime_acc.size())] = ts[0];
+        runtime_p_acc[runtime_acc_idx] = ts[1];
 
         // Update time and framecount
         t = glfwGetTime();
