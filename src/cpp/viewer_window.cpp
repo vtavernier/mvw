@@ -166,6 +166,12 @@ void viewer_window::run() {
         // Poll events
         glfwPollEvents();
 
+        // Clear the default framebuffer (background for ImGui)
+        gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
+        gl_call(glClearColor, 0.0f, 0.0f, 0.0f, 1.0f);
+        gl_call(glClearDepth, 1.f);
+        gl_call(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         // Start ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
