@@ -69,11 +69,14 @@ void mainImage(out vec4 O, in vec2 U)
 
     //debugGrid(O, vPosition, 0, _TILE_SIZE);
 
-    // Compute variance in O.a for renorm, using mipmap
-    O.a = O.x * O.x;
+    // Compute variance in O.b for renorm, using mipmap
+    O.b = O.x * O.x;
 
     // [0, 1] range
-    O.rgb = .5 * O.rgb + .5;
+    O.rg = .5 * O.rg + .5;
+
+    // alpha = 1 on all shaded pixels
+    O.a = 1.;
 
     // Shading for shape
     vec3 direction = normalize(vec3(1., 0., 1.));

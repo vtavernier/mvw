@@ -8,7 +8,8 @@
 using namespace shadertoy;
 using shadertoy::gl::gl_call;
 
-gl_state::gl_state(std::shared_ptr<spd::logger> log, int width, int height, const std::string &geometry_path)
+gl_state::gl_state(std::shared_ptr<spd::logger> log, int width, int height,
+                   const std::string &geometry_path)
     : log(log),
       g_buffer_template_(std::make_shared<compiler::program_template>()) {
     // Register the custom inputs with the buffer template
@@ -65,11 +66,6 @@ gl_state::chain_instance::chain_instance(
 
     geometry_buffer->source_file(shader_path);
 
-    // Without a background, the buffer should also clear the previous contents
-    geometry_buffer->clear_color({.15f, .15f, .15f, 1.f});
-    geometry_buffer->clear_depth(1.f);
-    geometry_buffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     bool has_postprocess = !postprocess_path.empty();
 
     // Add the geometry buffer to the swap chain, at the given size
@@ -77,14 +73,38 @@ gl_state::chain_instance::chain_instance(
         chain.emplace_back(geometry_buffer, make_size_ref(render_size),
                            member_swap_policy::single_buffer);
 
+    // Set the clearing details for the geometry target
+    auto &gs(geometry_target->state());
+
+    // Without a background, the buffer should also clear the previous contents
+    gs.clear_color({0.0f, 0.0f, 0.0f, 0.0f});
+    gs.clear_depth(1.f);
+    gs.clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Enable depth test since we are rendering geometry
+    gs.enable(GL_DEPTH_TEST);
+
     // Add the geometry buffer to the geometry-only chain
     // TODO: set viewport for geometry_chain
-    geometry_chain.emplace_back(geometry_buffer, make_size_ref(render_size),
-                                member_swap_policy::default_framebuffer);
+    auto wireframe_target =
+        geometry_chain.emplace_back(geometry_buffer, make_size_ref(render_size),
+                                    member_swap_policy::default_framebuffer);
+
+    // Set parameters for the wireframe target
+    auto &ws(wireframe_target->state());
+
+    // LEQUAL depth testing to draw over already rendered geometry
+    ws.enable(GL_DEPTH_TEST);
+    ws.depth_func(GL_LEQUAL);
+
+    // Smooth wireframes
+    ws.enable(GL_LINE_SMOOTH);
+    ws.polygon_mode(GL_LINE);
 
     if (has_postprocess) {
         // Add the postprocess buffer
-        postprocess_buffer = std::make_shared<buffers::toy_buffer>("postprocess");
+        postprocess_buffer =
+            std::make_shared<buffers::toy_buffer>("postprocess");
         postprocess_buffer->source_file(postprocess_path);
 
         // The postprocess pass has the output of the geometry pass as input 0
@@ -94,8 +114,23 @@ gl_state::chain_instance::chain_instance(
         postprocess_buffer->inputs().emplace_back(postprocess_input);
 
         // Render the output of the postprocess pass to the default framebuffer
-        chain.emplace_back(postprocess_buffer, make_size_ref(render_size),
-                           member_swap_policy::single_buffer);
+        auto postprocess_member =
+            chain.emplace_back(postprocess_buffer, make_size_ref(render_size),
+                               member_swap_policy::single_buffer);
+
+        // Clear the background of the postprocess buffer
+        postprocess_member->state().clear_color({0.15f, 0.15f, 0.15f, 1.f});
+        postprocess_member->state().clear_bits(GL_COLOR_BUFFER_BIT);
+
+        postprocess_member->state().enable(GL_BLEND);
+
+        postprocess_member->state().blend_mode_rgb(GL_FUNC_ADD);
+        postprocess_member->state().blend_src_rgb(GL_SRC_ALPHA);
+        postprocess_member->state().blend_dst_rgb(GL_ONE_MINUS_SRC_ALPHA);
+
+        postprocess_member->state().blend_mode_alpha(GL_FUNC_ADD);
+        postprocess_member->state().blend_src_alpha(GL_SRC_ALPHA);
+        postprocess_member->state().blend_dst_alpha(GL_ONE_MINUS_SRC_ALPHA);
     }
 
     chain.push_back(
@@ -121,30 +156,26 @@ void gl_state::load_chain(const std::string &shader_path,
 void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       geometry_inputs_t &extra_inputs,
                                       bool draw_wireframe) {
-    // First call: clear everything
-    geometry_buffer->clear_bits(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    // First call: draw the shaded geometry
     // Render the swap chain
-    gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_FILL);
     context.render(chain);
 
     if (draw_wireframe) {
         // Second call: render wireframe on top without post-processing
         extra_inputs.get<bWireframe>() = GL_TRUE;
-        geometry_buffer->clear_bits(0);
         // Render swap chain
-        gl_call(glPolygonMode, GL_FRONT_AND_BACK, GL_LINE);
         context.render(geometry_chain);
+        // Restore bWireframe state
+        extra_inputs.get<bWireframe>() = GL_FALSE;
     }
 }
 
-void gl_state::render(bool draw_wireframe, int back_revision)
-{
-    chains.at(chains.size() + back_revision - 1).render(context, extra_inputs, draw_wireframe);
+void gl_state::render(bool draw_wireframe, int back_revision) {
+    chains.at(chains.size() + back_revision - 1)
+        .render(context, extra_inputs, draw_wireframe);
 }
 
-void gl_state::get_render_ms(float times[2], int back_revision)
-{
+void gl_state::get_render_ms(float times[2], int back_revision) {
     auto &chain(chains.at(chains.size() + back_revision - 1));
 
     times[0] = chain.geometry_buffer->elapsed_time() / 1.0e6f;
@@ -155,8 +186,7 @@ void gl_state::get_render_ms(float times[2], int back_revision)
         times[1] = 0.0f;
 }
 
-void gl_state::allocate_textures()
-{
+void gl_state::allocate_textures() {
     for (auto &chain : chains) {
         context.allocate_textures(chain.chain);
         context.allocate_textures(chain.geometry_chain);

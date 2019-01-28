@@ -128,13 +128,6 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Load the initial state
     gl_state_->load_chain(shader_path, postprocess_path);
 
-    // Also we need depth test
-    gl_call(glEnable, GL_DEPTH_TEST);
-    gl_call(glDepthFunc, GL_LEQUAL);
-
-    // Smooth wireframe
-    gl_call(glEnable, GL_LINE_SMOOTH);
-
     // Compute model scale, update state
     //  Fetch dimensions of model
     glm::vec3 bbox_min, bbox_max;
@@ -174,6 +167,7 @@ void viewer_window::run() {
         glfwPollEvents();
 
         // Clear the default framebuffer (background for ImGui)
+        gl_call(glViewport, 0, 0, window_width, gl_state_->render_size.height);
         gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
         gl_call(glClearColor, 0.0f, 0.0f, 0.0f, 1.0f);
         gl_call(glClearDepth, 1.f);
@@ -276,7 +270,6 @@ void viewer_window::run() {
         gl_state_->extra_inputs.get<mModel>() = Model;
         gl_state_->extra_inputs.get<mView>() = View;
         gl_state_->extra_inputs.get<mProj>() = Projection;
-        gl_state_->extra_inputs.get<bWireframe>() = GL_FALSE;
 
         // Render current revision
         gl_state_->render(state_->draw_wireframe, viewed_revision_);
