@@ -45,7 +45,7 @@ struct gl_state {
 
         void render(
             shadertoy::render_context &context, geometry_inputs_t &extra_inputs,
-            bool draw_wireframe);
+            bool draw_wireframe, const shadertoy::rsize &render_size);
     };
 
     /// Loaded chain states

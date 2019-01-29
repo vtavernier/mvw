@@ -155,12 +155,21 @@ void gl_state::load_chain(const std::string &shader_path,
 
 void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       geometry_inputs_t &extra_inputs,
-                                      bool draw_wireframe) {
+                                      bool draw_wireframe,
+                                      const shadertoy::rsize &render_size) {
     // First call: draw the shaded geometry
     // Render the swap chain
     context.render(chain);
 
     if (draw_wireframe) {
+        // Copy the gl_buffer depth data onto the back left fb
+        gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
+        gl_call(glBindFramebuffer, GL_READ_FRAMEBUFFER, GLuint(geometry_buffer->target_fbo()));
+        gl_call(glBlitFramebuffer, 0, 0, render_size.width, render_size.height,
+                                   window_width, 0, render_size.width + window_width, render_size.height,
+                                   GL_DEPTH_BUFFER_BIT,
+                                   GL_NEAREST);
+
         // Second call: render wireframe on top without post-processing
         extra_inputs.get<bWireframe>() = GL_TRUE;
         // Render swap chain
@@ -172,7 +181,7 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
 
 void gl_state::render(bool draw_wireframe, int back_revision) {
     chains.at(chains.size() + back_revision - 1)
-        .render(context, extra_inputs, draw_wireframe);
+        .render(context, extra_inputs, draw_wireframe, render_size);
 }
 
 void gl_state::get_render_ms(float times[2], int back_revision) {
