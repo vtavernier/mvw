@@ -186,6 +186,10 @@ void viewer_window::run() {
 
         ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
 
+        bool show_grid = gl_state_->extra_inputs.get<dGrid>();
+        ImGui::Checkbox("Show grid", &show_grid);
+        gl_state_->extra_inputs.get<dGrid>() = show_grid ? 1 : 0;
+
         bool previous_rotate = state_->rotate_camera;
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);

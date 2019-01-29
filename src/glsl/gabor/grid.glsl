@@ -3,7 +3,6 @@
 
 m4_define(GRID3D_DEFINE,`void $1(inout vec4 O, in vec3 P, in int max_disp, in vec3 tile_size) {
     ivec3 ccell = ivec3(P / tile_size + .5 * sign(P));
-    vec3 ccenter = tile_size * (vec3(ccell) + off3(ccell));
     ivec3 disp;
 
     for (disp.x = -max_disp; disp.x <= max_disp; ++disp.x)
@@ -21,7 +20,6 @@ m4_define(GRID3D_DEFINE,`void $1(inout vec4 O, in vec3 P, in int max_disp, in ve
 
 m4_define(GRID2D_DEFINE,`void $1(inout vec4 O, in vec2 P, in int max_disp, in vec2 tile_size) {
     ivec3 ccell = ivec3(P / tile_size + .5 * sign(P));
-    vec2 ccenter = tile_size * (vec2(ccell) + off2(ccell));
     ivec2 disp;
 
     for (disp.x = -max_disp; disp.x <= max_disp; ++disp.x)

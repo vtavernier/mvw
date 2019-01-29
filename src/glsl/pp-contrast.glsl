@@ -3,7 +3,14 @@ void mainImage(out vec4 O, in vec2 U)
     vec4 c = texture(iChannel0, U / iResolution.xy);
     vec4 fc = textureLod(iChannel0, U / iResolution.xy, cFilterLod);
 
-    O = vec4(2. * (c.rrr - .5) / sqrt(fc.b), c.a);
+    if (dGrid) {
+        O = c;
+        return;
+    }
 
+    O = vec4(2. * (c.rrr - .5) / sqrt(fc.b), c.a);
     O.rgb = .5 * O.rgb + .5;
+
+    // Apply lighting component
+    O.rgb *= c.g;
 }

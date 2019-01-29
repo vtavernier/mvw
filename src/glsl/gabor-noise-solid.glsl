@@ -1,6 +1,6 @@
 m4_include(core/math.glsl)
 m4_include(core/hash.glsl)
-m4_include(prng/xorshift.glsl)
+m4_include(prng/xoroshiro.glsl)
 m4_include(prng/poisson.glsl)
 m4_define(WHITE_POISSON,0)
 m4_include(pg/3d/white.glsl)
@@ -42,47 +42,7 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
     }
 }
 
-void debugCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
-    O += vec4(2. * vec3(ccell) / floor((bboxMax - bboxMin) / _TILE_SIZE), 1.);
-}
-
-void debugRot(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
-    float phase = 2. * M_PI * gF0 * dot((P - center), W0VEC(gW0));
-    O = vec4(cos(phase), sin(phase), -1., 1.);
-}
-
 GRID3D_DEFINE(gaborGrid,gaborCell)
-GRID3D_DEFINE(debugGrid,debugCell)
-GRID3D_DEFINE(debugRotGrid,debugRot)
 
-void mainImage(out vec4 O, in vec2 U)
-{
-    // Initial return value
-    O = vec4(0.);
-
-    //debugRotGrid(O, vPosition, 0, _TILE_SIZE);
-
-    // Grid-evaluate Gabor noise
-    gaborGrid(O, bboxMin + vPosition, 2, _TILE_SIZE);
-
-    // Normalize output
-    O = 1. / sqrt(3.) * O / sqrt(float(gSplats));
-
-    //debugGrid(O, vPosition, 0, _TILE_SIZE);
-
-    // Compute variance in O.b for renorm, using mipmap
-    O.b = O.x * O.x;
-
-    // [0, 1] range
-    O.rg = .5 * O.rg + .5;
-
-    // alpha = 1 on all shaded pixels
-    O.a = 1.;
-
-    // Shading for shape
-    vec3 direction = normalize(vec3(1., 0., 1.));
-    vec3 normal = normalize(mat3(mModel) * vNormal);
-    float diffuse = max(dot(normal, direction), 0.0);
-
-    //O.rgb *= (.2 + .8 * max(diffuse, 0.));
-}
+m4_include(util/debug.glsl)
+m4_include(util/gabor_main.glsl)
