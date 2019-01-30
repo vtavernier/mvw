@@ -10,6 +10,7 @@
 
 struct viewer_state {
     bool draw_wireframe;
+    bool draw_quad;
     bool rotate_camera;
     float user_rotate_x;
     float user_rotate_y;

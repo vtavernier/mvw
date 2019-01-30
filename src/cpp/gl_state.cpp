@@ -61,7 +61,7 @@ gl_state::chain_instance::chain_instance(
     shadertoy::render_context &context, rsize &render_size,
     std::shared_ptr<mvw_geometry> geometry) {
     // Create the geometry buffer
-    geometry_buffer = std::make_shared<buffers::geometry_buffer>("geometry");
+    geometry_buffer = std::make_shared<mvw_buffer>("geometry");
     geometry_buffer->override_program(g_buffer_template);
 
     geometry_buffer->source_file(shader_path);
@@ -156,7 +156,12 @@ void gl_state::load_chain(const std::string &shader_path,
 void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       geometry_inputs_t &extra_inputs,
                                       bool draw_wireframe,
+                                      bool draw_quad,
                                       const shadertoy::rsize &render_size) {
+    // Update quad rendering status
+    geometry_buffer->render_quad(draw_quad);
+    extra_inputs.get<dQuad>() = draw_quad ? 1 : 0;
+
     // First call: draw the shaded geometry
     // Render the swap chain
     context.render(chain);
@@ -179,9 +184,9 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
     }
 }
 
-void gl_state::render(bool draw_wireframe, int back_revision) {
+void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision) {
     chains.at(chains.size() + back_revision - 1)
-        .render(context, extra_inputs, draw_wireframe, render_size);
+        .render(context, extra_inputs, draw_wireframe, draw_quad, render_size);
 }
 
 void gl_state::get_render_ms(float times[2], int back_revision) {

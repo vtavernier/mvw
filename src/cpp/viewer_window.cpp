@@ -186,6 +186,8 @@ void viewer_window::run() {
 
         ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
 
+        ImGui::Checkbox("Render as quad", &state_->draw_quad);
+
         bool show_grid = gl_state_->extra_inputs.get<dGrid>();
         ImGui::Checkbox("Show grid", &show_grid);
         gl_state_->extra_inputs.get<dGrid>() = show_grid ? 1 : 0;
@@ -276,7 +278,7 @@ void viewer_window::run() {
         gl_state_->extra_inputs.get<mProj>() = Projection;
 
         // Render current revision
-        gl_state_->render(state_->draw_wireframe, viewed_revision_);
+        gl_state_->render(state_->draw_wireframe, state_->draw_quad, viewed_revision_);
 
         // Render ImGui overlay
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

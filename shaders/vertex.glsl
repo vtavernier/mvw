@@ -21,5 +21,9 @@ void main() {
     vNormal = normal;
     vPosition = position;
 
-    gl_Position = mProj * mView * mModel * vec4(position, 1.0);
+    if (dQuad) {
+        gl_Position = vec4(position, 1.0);
+    } else {
+        gl_Position = mProj * mView * mModel * vec4(position, 1.0);
+    }
 }

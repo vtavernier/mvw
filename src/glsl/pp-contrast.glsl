@@ -5,6 +5,7 @@ void mainImage(out vec4 O, in vec2 U)
 
     if (dGrid) {
         O = c;
+        O.g = 0.;
         return;
     }
 
@@ -12,5 +13,5 @@ void mainImage(out vec4 O, in vec2 U)
     O.rgb = .5 * O.rgb + .5;
 
     // Apply lighting component
-    O.rgb *= c.g;
+    if (!dQuad) O.rgb *= c.g;
 }

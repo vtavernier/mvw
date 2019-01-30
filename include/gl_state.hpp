@@ -8,6 +8,8 @@
 
 #include "mvw/geometry.hpp"
 
+#include "mvw_buffer.hpp"
+
 struct gl_state {
     /// Main logger instance
     std::shared_ptr<spd::logger> log;
@@ -31,7 +33,7 @@ struct gl_state {
     struct chain_instance {
         shadertoy::swap_chain chain;
         shadertoy::swap_chain geometry_chain;
-        std::shared_ptr<shadertoy::buffers::geometry_buffer> geometry_buffer;
+        std::shared_ptr<mvw_buffer> geometry_buffer;
         std::shared_ptr<shadertoy::buffers::toy_buffer> postprocess_buffer;
 
         chain_instance(std::shared_ptr<spd::logger> log,
@@ -45,7 +47,7 @@ struct gl_state {
 
         void render(
             shadertoy::render_context &context, geometry_inputs_t &extra_inputs,
-            bool draw_wireframe, const shadertoy::rsize &render_size);
+            bool draw_wireframe, bool draw_quad, const shadertoy::rsize &render_size);
     };
 
     /// Loaded chain states
@@ -56,7 +58,7 @@ struct gl_state {
     void load_chain(const std::string &shader_path,
                     const std::string &postprocess_path);
 
-    void render(bool draw_wireframe, int back_revision = 0);
+    void render(bool draw_wireframe, bool draw_quad, int back_revision = 0);
 
     void get_render_ms(float times[2], int back_revision = 0);
 
