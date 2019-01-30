@@ -153,8 +153,8 @@ void viewer_window::run() {
     double t = 0.;
 
     // Defaults
-    gl_state_->extra_inputs.get<gTilesize>() = state_->scale;
-    gl_state_->extra_inputs.get<gSplats>() = 1;
+    gl_state_->extra_inputs.get<gTilesize>() = .1f / state_->scale;
+    gl_state_->extra_inputs.get<gSplats>() = 3;
     gl_state_->extra_inputs.get<gF0>() = 1.0f;
     gl_state_->extra_inputs.get<cFilterLod>() = 2.0f;
 
