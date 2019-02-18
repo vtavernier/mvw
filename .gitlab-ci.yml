@@ -11,7 +11,7 @@ build_viewer:
     GIT_SUBMODULE_STRATEGY: recursive
     DEBIAN_FRONTEND: noninteractive
   script:
-    - apt-get update -q && apt-get install -y --no-install-recommends git build-essential debhelper libboost-filesystem-dev libboost-date-time-dev libboost-program-options-dev libc6-dev libstdc++-6-dev libsoil-dev libjpeg-dev libepoxy-dev libgl1-mesa-dev libglm-dev libopenexr-dev libunwind-dev pkg-config cmake libglfw3-dev
+    - apt-get update -q && apt-get install -y --no-install-recommends git build-essential debhelper libboost-filesystem-dev libboost-date-time-dev libboost-program-options-dev libc6-dev libstdc++-6-dev libsoil-dev libjpeg-dev libepoxy-dev libgl1-mesa-dev libglm-dev libopenexr-dev libunwind-dev pkg-config cmake libglfw3-dev libzmq3-dev
     - mkdir -p build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
