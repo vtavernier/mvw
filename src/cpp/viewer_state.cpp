@@ -5,7 +5,7 @@
 viewer_state::viewer_state(std::shared_ptr<spd::logger> log)
     : draw_wireframe(false),
       draw_quad(false),
-      rotate_camera(true),
+      rotate_camera(false),
       user_rotate_x(0.0f),
       user_rotate_y(0.0f),
       pressed_pos_x(0.),
