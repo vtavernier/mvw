@@ -200,6 +200,13 @@ void gl_state::get_render_ms(float times[2], int back_revision) {
         times[1] = 0.0f;
 }
 
+const gl::texture &gl_state::get_render_result(int back_revision) {
+    auto &chain(chains.at(chains.size() + back_revision - 1));
+    auto &member(*--chain.chain.members().rend());
+
+    return *std::static_pointer_cast<members::buffer_member>(member)->output();
+}
+
 void gl_state::allocate_textures() {
     for (auto &chain : chains) {
         context.allocate_textures(chain.chain);

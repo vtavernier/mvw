@@ -15,12 +15,14 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(Threads REQUIRED)
 
 # OpenGL libraries
-find_package(OpenGL REQUIRED)
 find_package(Epoxy REQUIRED)
 find_package(Glfw3 REQUIRED)
 
 # Boost
 find_package(Boost 1.58 REQUIRED COMPONENTS filesystem program_options)
+
+# Remoting using ZMQ
+find_package(ZeroMQ REQUIRED)
 
 # libshadertoy
 add_subdirectory(libshadertoy)

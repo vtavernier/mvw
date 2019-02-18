@@ -62,6 +62,8 @@ struct gl_state {
 
     void get_render_ms(float times[2], int back_revision = 0);
 
+    const shadertoy::gl::texture &get_render_result(int back_revision = 0);
+
     void allocate_textures();
 
    private:

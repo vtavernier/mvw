@@ -70,8 +70,10 @@ void viewer_window::reload_shader() {
 viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
                              int height, const std::string &geometry_path,
                              const std::string &shader_path,
-                             const std::string &postprocess_path, bool use_make)
-    : shader_path_(shader_path),
+                             const std::string &postprocess_path, bool use_make,
+                             const std::string &bind_addr)
+    : server_{nullptr},
+      shader_path_(shader_path),
       postprocess_path_(postprocess_path),
       use_make_(use_make),
       viewed_revision_(0) {
@@ -146,6 +148,10 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
 
     state_->center = center;
     state_->scale = 1. / dimensions.z;
+
+    // Start server
+    if (!bind_addr.empty())
+        server_ = std::make_unique<net::server>(bind_addr);
 }
 
 void viewer_window::run() {
@@ -279,6 +285,10 @@ void viewer_window::run() {
 
         // Render current revision
         gl_state_->render(state_->draw_wireframe, state_->draw_quad, viewed_revision_);
+
+        // Poll server instance for requests
+        if (server_)
+            server_->poll(*gl_state_, viewed_revision_);
 
         // Render ImGui overlay
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

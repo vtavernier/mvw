@@ -11,11 +11,13 @@
 #include "mvw/mvw_geometry.hpp"
 
 #include "gl_state.hpp"
+#include "net/server.hpp"
 
 class viewer_window {
     GLFWwindow *window_;
     std::unique_ptr<viewer_state> state_;
     std::unique_ptr<gl_state> gl_state_;
+    std::unique_ptr<net::server> server_;
 
     const std::string &shader_path_;
     const std::string &postprocess_path_;
@@ -44,7 +46,8 @@ class viewer_window {
    public:
     viewer_window(std::shared_ptr<spd::logger> log, int width, int height,
                   const std::string &geometry_path, const std::string &shader_path,
-                  const std::string &postprocess_path, bool use_make);
+                  const std::string &postprocess_path, bool use_make,
+                  const std::string &bind_addr);
 
     void run();
 

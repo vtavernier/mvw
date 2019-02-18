@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
     std::string postprocess_path;
     int width, height = 1024;
     bool use_make;
+    std::string bind_addr;
 
     // clang-format off
     po::options_description v_desc("Viewer options");
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
         ("width,W", po::value(&width)->default_value(height + window_width), "Window width")
         ("height,H", po::value(&height)->default_value(height), "Window height")
         ("use-make,m", po::bool_switch(&use_make), "Compile the target shader file using make first")
+        ("bind,b", po::value(&bind_addr)->default_value("tcp://127.0.0.1:7178"), "Server bind address")
         ("help,h", "Show this help message");
     // clang-format on
 
@@ -72,7 +74,8 @@ int main(int argc, char *argv[]) {
                              geometry_path,
                              shader_path,
                              postprocess_path,
-                             use_make);
+                             use_make,
+                             bind_addr);
         window.run();
     } catch (gl::shader_compilation_error &sce) {
         log->critical("Failed to compile shader: {}", sce.log());
