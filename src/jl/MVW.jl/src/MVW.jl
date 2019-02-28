@@ -6,7 +6,16 @@ module MVW
         socket::ZMQ.Socket
     end
 
-    function connect(target = "tcp://127.0.0.1:7178")
+    function default_bind_addr()
+        @static if Sys.iswindows()
+            return "tcp://127.0.0.1:7178"
+        else
+            tmpdir = haskey(ENV, "TMPDIR") ? ENV["TMPDIR"] : "/tmp"
+            return "ipc://$tmpdir/mvw_default.sock"
+        end
+    end
+
+    function connect(target = default_bind_addr())
         # Establish connection with REQ socket
         connection = Connection(ZMQ.Socket(ZMQ.REQ))
         ZMQ.connect(connection.socket, target)

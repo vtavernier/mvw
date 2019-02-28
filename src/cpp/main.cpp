@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <cstdlib>
 #include <iostream>
 
 #include <boost/program_options.hpp>
@@ -11,6 +12,17 @@
 using namespace shadertoy;
 
 namespace po = boost::program_options;
+
+std::string default_bind_addr() {
+#if _WIN32
+    return "tcp://127.0.0.1:7178";
+#else
+    std::stringstream ss;
+    char *tmpdir = std::getenv("TMPDIR");
+    ss << "ipc://" << (tmpdir ? tmpdir : "/tmp") << "/mvw_default.sock";
+    return ss.str();
+#endif /* _WIN32 */
+}
 
 int main(int argc, char *argv[]) {
     int code = 0;
@@ -34,7 +46,7 @@ int main(int argc, char *argv[]) {
         ("width,W", po::value(&width)->default_value(height + window_width), "Window width")
         ("height,H", po::value(&height)->default_value(height), "Window height")
         ("use-make,m", po::bool_switch(&use_make), "Compile the target shader file using make first")
-        ("bind,b", po::value(&bind_addr)->default_value("tcp://127.0.0.1:7178"), "Server bind address")
+        ("bind,b", po::value(&bind_addr)->default_value(default_bind_addr()), "Server bind address")
         ("help,h", "Show this help message");
     // clang-format on
 
