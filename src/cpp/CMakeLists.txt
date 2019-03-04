@@ -26,7 +26,8 @@ target_link_libraries(viewer PRIVATE
     ${Glfw3_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${Boost_LIBRARIES}
-    ${ZeroMQ_LIBRARIES})
+    ${ZeroMQ_LIBRARIES}
+    msgpackc-cxx)
 
 target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
 

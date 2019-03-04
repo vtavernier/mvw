@@ -71,6 +71,14 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
 target_include_directories(imgui PUBLIC ${IMGUI_BUILD_DIRECTORY})
 
+# msgpack
+set(MSGPACK_CXX11 ON CACHE BOOL "")
+set(MSGPACK_BOOST ON CACHE BOOL "")
+set(MSGPACK_BUILD_EXAMPLES OFF CACHE BOOL "")
+set(MSGPACK_BUILD_TESTS OFF CACHE BOOL "")
+set(MSGPACK_ENABLE_CXX ON CACHE BOOL "")
+add_subdirectory(msgpack-c EXCLUDE_FROM_ALL)
+
 # Directories
 set(INCLUDE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src)

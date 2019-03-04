@@ -10,3 +10,6 @@
 [submodule "imgui"]
 	path = imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "msgpack-c"]
+	path = msgpack-c
+	url = https://github.com/msgpack/msgpack-c.git
