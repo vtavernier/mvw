@@ -10,6 +10,9 @@
 using namespace net;
 
 namespace net {
+typedef msgpack::type::tuple<bool, std::string> default_reply;
+typedef msgpack::type::tuple<bool, std::map<std::string, int>> getframe_reply;
+
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
         auto ptr = reinterpret_cast<msgpack::sbuffer *>(hint);
@@ -55,18 +58,7 @@ class server_impl {
 };
 }  // namespace net
 
-void server::handle_getframe(gl_state &gl_state, int revision, bool &read_frame,
-                             bool &render_next_frame) const {
-    if (read_frame) {
-        // We already read a frame this poll-round
-        // This means setparam messages were in the queue
-        // and we now need to render a new frame with those
-        // changed parameters.
-        render_next_frame = true;
-        impl_->getframe_pending = true;
-        return;
-    }
-
+void server::handle_getframe(gl_state &gl_state, int revision) const {
     // Get rendered-to texture
     auto &texture = gl_state.get_render_result(revision);
 
@@ -77,8 +69,7 @@ void server::handle_getframe(gl_state &gl_state, int revision, bool &read_frame,
     texture.get_parameter(0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
 
     // Status message
-    msgpack::type::tuple<bool, std::map<std::string, int>> result(
-        true, std::map<std::string, int>{});
+    net::getframe_reply result(true, std::map<std::string, int>{});
 
     // Set format message data
     result.get<1>().emplace("width", width);
@@ -96,11 +87,9 @@ void server::handle_getframe(gl_state &gl_state, int revision, bool &read_frame,
 
     size_t sz = width * height * bytes_per_pixel;
     zmq::message_t data_msg(sz);
+    // Read the image into the message buffer directly
     texture.get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
     impl_->socket.send(data_msg);
-
-    impl_->getframe_pending = false;
-    read_frame = true;
 }
 
 server::server(const std::string &bind_addr)
@@ -109,32 +98,44 @@ server::server(const std::string &bind_addr)
 server::~server() {}
 
 void server::poll(gl_state &gl_state, int revision) const {
+    // true if we should stop reading messages and render the next frame
     bool next_frame = false;
-    bool read_frame = false;
+    // true if we changed any render state, meaning the current frame does
+    // not match the new render state
+    bool changed_state = false;
 
+    // Check for pending getframe that we have to reply to
+    if (impl_->getframe_pending) {
+            handle_getframe(gl_state, revision);
+
+            // Acknowledge getframe
+            impl_->getframe_pending = false;
+    }
+
+    // Poll for incoming messages
     while (!next_frame) {
         zmq::pollitem_t items[] = {
             {static_cast<void *>(impl_->socket), 0, ZMQ_POLLIN, 0}};
 
-        if (!impl_->getframe_pending) {
-            // Check for an incoming request
-            zmq::poll(&items[0], sizeof(items) / sizeof(items[0]), 0);
-        }
+        // Check for an incoming request
+        zmq::poll(&items[0], sizeof(items) / sizeof(items[0]), 0);
 
         // Incoming request?
-        if (items[0].revents & ZMQ_POLLIN || impl_->getframe_pending) {
-            if (impl_->getframe_pending) {
-                handle_getframe(gl_state, revision, read_frame, next_frame);
-            } else {
-                auto cmdname = impl_->recv_cmd();
+        if (items[0].revents & ZMQ_POLLIN) {
+            auto cmdname = impl_->recv_cmd();
 
-                if (cmdname.compare(CMD_NAME_GETFRAME) == 0) {
-                    handle_getframe(gl_state, revision, read_frame, next_frame);
+            if (cmdname.compare(CMD_NAME_GETFRAME) == 0) {
+                if (changed_state) {
+                    // We changed some render state, so the user probably wants the
+                    // updated result instead of the current frame
+                    impl_->getframe_pending = true;
+                    next_frame = true;
                 } else {
-                    msgpack::type::tuple<bool, std::string> result(
-                        false, "unknown command");
-                    impl_->send(result);
+                    handle_getframe(gl_state, revision);
                 }
+            } else {
+                net::default_reply result(false, "unknown command");
+                impl_->send(result);
             }
         } else {
             next_frame = true;
