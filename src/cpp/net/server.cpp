@@ -1,4 +1,5 @@
 #include <epoxy/gl.h>
+#include <msgpack.hpp>
 #include <zmq.hpp>
 
 #include "gl_state.hpp"
@@ -9,7 +10,13 @@
 using namespace net;
 
 namespace net {
-struct server_impl {
+class server_impl {
+    static void free_msgpack(void *data, void *hint) {
+        auto ptr = reinterpret_cast<msgpack::sbuffer *>(hint);
+        delete ptr;
+    }
+
+   public:
     zmq::context_t context;
     zmq::socket_t socket;
     std::shared_ptr<spd::logger> logger;
@@ -25,15 +32,83 @@ struct server_impl {
         logger->info("Binding to {}", bind_addr);
         socket.bind(bind_addr.c_str());
     }
+
+    template <typename T>
+    void send(T &&msg, int flags = 0) {
+        // use new because of the C zero-copy API of ZMQ
+        msgpack::sbuffer *buffer = new msgpack::sbuffer();
+        msgpack::pack(*buffer, msg);
+
+        zmq::message_t zmsg(buffer->data(), buffer->size(), free_msgpack,
+                            buffer);
+        socket.send(zmsg, flags);
+    }
+
+    std::string recv_cmd() {
+        zmq::message_t cmd_msg;
+        socket.recv(&cmd_msg);
+
+        return std::string(
+            reinterpret_cast<const char *>(cmd_msg.data()),
+            reinterpret_cast<const char *>(cmd_msg.data()) + cmd_msg.size());
+    }
 };
 }  // namespace net
+
+void server::handle_getframe(gl_state &gl_state, int revision, bool &read_frame,
+                             bool &render_next_frame) const {
+    if (read_frame) {
+        // We already read a frame this poll-round
+        // This means setparam messages were in the queue
+        // and we now need to render a new frame with those
+        // changed parameters.
+        render_next_frame = true;
+        impl_->getframe_pending = true;
+        return;
+    }
+
+    // Get rendered-to texture
+    auto &texture = gl_state.get_render_result(revision);
+
+    // Get texture parameters and format
+    GLint width, height, internal_format;
+    texture.get_parameter(0, GL_TEXTURE_WIDTH, &width);
+    texture.get_parameter(0, GL_TEXTURE_HEIGHT, &height);
+    texture.get_parameter(0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+
+    // Status message
+    msgpack::type::tuple<bool, std::map<std::string, int>> result(
+        true, std::map<std::string, int>{});
+
+    // Set format message data
+    result.get<1>().emplace("width", width);
+    result.get<1>().emplace("height", height);
+    result.get<1>().emplace("format", internal_format);
+
+    impl_->send(result, ZMQ_SNDMORE);
+
+    // Send image data
+    size_t bytes_per_pixel;
+    if (internal_format == GL_RGBA32F)
+        bytes_per_pixel = 4 * sizeof(float);
+    else
+        throw std::runtime_error("Unsupported internal format");
+
+    size_t sz = width * height * bytes_per_pixel;
+    zmq::message_t data_msg(sz);
+    texture.get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
+    impl_->socket.send(data_msg);
+
+    impl_->getframe_pending = false;
+    read_frame = true;
+}
 
 server::server(const std::string &bind_addr)
     : impl_{std::make_unique<server_impl>(bind_addr)} {}
 
 server::~server() {}
 
-void server::poll(gl_state &gl_state, int revision) {
+void server::poll(gl_state &gl_state, int revision) const {
     bool next_frame = false;
     bool read_frame = false;
 
@@ -48,72 +123,18 @@ void server::poll(gl_state &gl_state, int revision) {
 
         // Incoming request?
         if (items[0].revents & ZMQ_POLLIN || impl_->getframe_pending) {
-            zmq::message_t cmd_msg;
-            if (!impl_->getframe_pending)
-                impl_->socket.recv(&cmd_msg);
-
-            if (impl_->getframe_pending ||
-                std::strncmp("getframe",
-                             reinterpret_cast<const char *>(cmd_msg.data()),
-                             cmd_msg.size()) == 0) {
-                if (read_frame) {
-                    // We already read a frame this poll-round
-                    // This means setparam messages were in the queue
-                    // and we now need to render a new frame with those
-                    // changed parameters.
-                    next_frame = true;
-                    impl_->getframe_pending = true;
-                    break;
-                }
-
-                // Get rendered-to texture
-                auto &texture = gl_state.get_render_result(revision);
-
-                // Status message
-                const char status[] = "success";
-                zmq::message_t status_msg(sizeof(status) - 1);
-                memcpy(status_msg.data(), status, sizeof(status) - 1);
-                impl_->socket.send(status_msg, ZMQ_SNDMORE);
-
-                // Get texture parameters and format
-                GLint width, height, internal_format;
-                texture.get_parameter(0, GL_TEXTURE_WIDTH, &width);
-                texture.get_parameter(0, GL_TEXTURE_HEIGHT, &height);
-                texture.get_parameter(0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
-
-                // Build format message data
-                int32_t format_spec[] = { width, height, internal_format };
-
-                zmq::message_t format_msg(sizeof(format_spec));
-                memcpy(format_msg.data(), format_spec, sizeof(format_spec));
-                impl_->socket.send(format_msg, ZMQ_SNDMORE);
-
-                // Send image data
-                size_t bytes_per_pixel;
-                if (internal_format == GL_RGBA32F)
-                    bytes_per_pixel = 4 * sizeof(float);
-                else
-                    throw std::runtime_error("Unsupported internal format");
-
-                size_t sz = width * height * bytes_per_pixel;
-                zmq::message_t data_msg(sz);
-                texture.get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
-                impl_->socket.send(data_msg);
-
-                read_frame = true;
-                impl_->getframe_pending = false;
+            if (impl_->getframe_pending) {
+                handle_getframe(gl_state, revision, read_frame, next_frame);
             } else {
-                const char status[] = "error";
-                const char details[] = "unknown command";
+                auto cmdname = impl_->recv_cmd();
 
-                zmq::message_t status_msg(sizeof(status) - 1);
-                zmq::message_t err_msg(sizeof(details) - 1);
-
-                memcpy(status_msg.data(), status, sizeof(status) - 1);
-                memcpy(err_msg.data(), details, sizeof(details) - 1);
-
-                impl_->socket.send(status_msg, ZMQ_SNDMORE);
-                impl_->socket.send(err_msg, ZMQ_SNDMORE);
+                if (cmdname.compare(CMD_NAME_GETFRAME) == 0) {
+                    handle_getframe(gl_state, revision, read_frame, next_frame);
+                } else {
+                    msgpack::type::tuple<bool, std::string> result(
+                        false, "unknown command");
+                    impl_->send(result);
+                }
             }
         } else {
             next_frame = true;

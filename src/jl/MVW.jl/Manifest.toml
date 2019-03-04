@@ -276,6 +276,12 @@ version = "0.4.0"
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
+[[MsgPack]]
+deps = ["Compat", "Random", "Test"]
+git-tree-sha1 = "c44b3470fa98705f9c12cb44ec9504de3af027ad"
+uuid = "99f44e22-a591-53d1-9472-aa23ef4bd671"
+version = "0.2.0"
+
 [[NaNMath]]
 deps = ["Compat"]
 git-tree-sha1 = "ce3b85e484a5d4c71dd5316215069311135fa9f2"

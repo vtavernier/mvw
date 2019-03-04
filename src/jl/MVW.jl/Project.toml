@@ -5,4 +5,5 @@ version = "0.1.0"
 
 [deps]
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+MsgPack = "99f44e22-a591-53d1-9472-aa23ef4bd671"
 ZMQ = "c2297ded-f4af-51ae-bb23-16f91089e4e1"

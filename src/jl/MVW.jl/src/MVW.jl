@@ -1,5 +1,5 @@
 module MVW
-    import Images, ZMQ
+    import Images, ZMQ, MsgPack
     export Connection, connect, getframe
 
     struct Connection
@@ -28,12 +28,11 @@ module MVW
         ZMQ.send(connection.socket, msg)
 
         # Fetch response
-        status = unsafe_string(ZMQ.recv(connection.socket))
+        (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
 
-        if status == "success"
+        if success
             # Fetch image format
-            (width, height, internal_format) =
-                ZMQ.recv(connection.socket, Vector{Int32})
+            (width, height) = map(k -> details[k], ["width", "height"])
 
             # Fetch image data
             image_data = ZMQ.recv(connection.socket, Vector{Float32})
@@ -42,7 +41,7 @@ module MVW
             # Make image object
             Images.colorview(Images.RGBA, PermutedDimsArray(reverse(reshape(image_data, (4, width, height)), dims=3), (1,3,2)))
         else
-            error("getframe failed: " * unsafe_string(ZMQ.recv(connection.socket)))
+            error("getframe failed: " * details)
         end
     end
 end # module
