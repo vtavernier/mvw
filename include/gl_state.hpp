@@ -10,6 +10,8 @@
 
 #include "mvw_buffer.hpp"
 
+#include "discovered_uniform.hpp"
+
 struct gl_state {
     /// Main logger instance
     std::shared_ptr<spd::logger> log;
@@ -36,6 +38,9 @@ struct gl_state {
         std::shared_ptr<mvw_buffer> geometry_buffer;
         std::shared_ptr<shadertoy::buffers::toy_buffer> postprocess_buffer;
 
+        parsed_inputs_t parsed_inputs;
+        std::vector<discovered_uniform> discovered_uniforms;
+
         chain_instance(std::shared_ptr<spd::logger> log,
                        std::shared_ptr<shadertoy::compiler::program_template>
                            g_buffer_template,
@@ -45,20 +50,27 @@ struct gl_state {
                        shadertoy::rsize &render_size,
                        std::shared_ptr<mvw_geometry> geometry);
 
-        void render(
-            shadertoy::render_context &context, geometry_inputs_t &extra_inputs,
-            bool draw_wireframe, bool draw_quad, const shadertoy::rsize &render_size);
+        void render(shadertoy::render_context &context,
+                    geometry_inputs_t &extra_inputs, bool draw_wireframe,
+                    bool draw_quad, const shadertoy::rsize &render_size);
+
+      private:
+        void parse_uniforms(const std::string &path,
+                            std::shared_ptr<spd::logger> log);
     };
 
     /// Loaded chain states
     std::vector<chain_instance> chains;
 
-    gl_state(std::shared_ptr<spd::logger> log, int width, int height, const std::string &geometry_path);
+    gl_state(std::shared_ptr<spd::logger> log, int width, int height,
+             const std::string &geometry_path);
 
     void load_chain(const std::string &shader_path,
                     const std::string &postprocess_path);
 
     void render(bool draw_wireframe, bool draw_quad, int back_revision = 0);
+
+    void render_imgui(int back_revision = 0);
 
     void get_render_ms(float times[2], int back_revision = 0);
 

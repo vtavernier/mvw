@@ -43,7 +43,9 @@ class viewer_window {
 
     void reload_shader();
 
-   public:
+    void compile_and_discover_uniforms();
+
+  public:
     viewer_window(std::shared_ptr<spd::logger> log, int width, int height,
                   const std::string &geometry_path, const std::string &shader_path,
                   const std::string &postprocess_path, bool use_make,

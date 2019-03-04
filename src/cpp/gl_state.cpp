@@ -2,6 +2,9 @@
 
 #include <shadertoy.hpp>
 
+#include <fstream>
+#include <regex>
+
 #include "config.hpp"
 #include "gl_state.hpp"
 
@@ -60,13 +63,28 @@ gl_state::chain_instance::chain_instance(
     const std::string &shader_path, const std::string &postprocess_path,
     shadertoy::render_context &context, rsize &render_size,
     std::shared_ptr<mvw_geometry> geometry) {
+  bool has_postprocess = !postprocess_path.empty();
+
+  // There is some shared state in the template here, but it's the simplest
+  g_buffer_template->shader_inputs()["parsed"] = &parsed_inputs;
+  context.buffer_template().shader_inputs()["parsed"] = &parsed_inputs;
+
+  // Parse uniforms from source
+  parse_uniforms(shader_path, log);
+  if (has_postprocess)
+    parse_uniforms(postprocess_path, log);
+
+  // Apply the defaults to define the uniforms before the template is
+  // generated
+  for (auto &uniform : discovered_uniforms) {
+    uniform.create_uniform(parsed_inputs);
+  }
+
     // Create the geometry buffer
     geometry_buffer = std::make_shared<mvw_buffer>("geometry");
     geometry_buffer->override_program(g_buffer_template);
 
     geometry_buffer->source_file(shader_path);
-
-    bool has_postprocess = !postprocess_path.empty();
 
     // Add the geometry buffer to the swap chain, at the given size
     auto geometry_target =
@@ -155,38 +173,56 @@ void gl_state::load_chain(const std::string &shader_path,
 
 void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       geometry_inputs_t &extra_inputs,
-                                      bool draw_wireframe,
-                                      bool draw_quad,
+                                      bool draw_wireframe, bool draw_quad,
                                       const shadertoy::rsize &render_size) {
-    // Update quad rendering status
-    geometry_buffer->render_quad(draw_quad);
-    extra_inputs.get<dQuad>() = draw_quad ? 1 : 0;
+  // Update quad rendering status
+  geometry_buffer->render_quad(draw_quad);
+  extra_inputs.get<dQuad>() = draw_quad ? 1 : 0;
 
-    // First call: draw the shaded geometry
-    // Render the swap chain
-    context.render(chain);
+  // First call: draw the shaded geometry
+  // Render the swap chain
+  context.render(chain);
 
-    if (draw_wireframe) {
-        // Copy the gl_buffer depth data onto the back left fb
-        gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
-        gl_call(glBindFramebuffer, GL_READ_FRAMEBUFFER, GLuint(geometry_buffer->target_fbo()));
-        gl_call(glBlitFramebuffer, 0, 0, render_size.width, render_size.height,
-                                   window_width, 0, render_size.width + window_width, render_size.height,
-                                   GL_DEPTH_BUFFER_BIT,
-                                   GL_NEAREST);
+  if (draw_wireframe) {
+    // Copy the gl_buffer depth data onto the back left fb
+    gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
+    gl_call(glBindFramebuffer, GL_READ_FRAMEBUFFER,
+            GLuint(geometry_buffer->target_fbo()));
+    gl_call(glBlitFramebuffer, 0, 0, render_size.width, render_size.height,
+            window_width, 0, render_size.width + window_width,
+            render_size.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-        // Second call: render wireframe on top without post-processing
-        extra_inputs.get<bWireframe>() = GL_TRUE;
-        // Render swap chain
-        context.render(geometry_chain);
-        // Restore bWireframe state
-        extra_inputs.get<bWireframe>() = GL_FALSE;
-    }
+    // Second call: render wireframe on top without post-processing
+    extra_inputs.get<bWireframe>() = GL_TRUE;
+    // Render swap chain
+    context.render(geometry_chain);
+    // Restore bWireframe state
+    extra_inputs.get<bWireframe>() = GL_FALSE;
+  }
+}
+
+void gl_state::chain_instance::parse_uniforms(
+    const std::string &path, std::shared_ptr<spd::logger> log) {
+  std::string line;
+  std::ifstream ifs(path);
+  while (!ifs.eof()) {
+    std::getline(ifs, line);
+    try_parse_uniform(line, discovered_uniforms, log);
+  }
 }
 
 void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision) {
     chains.at(chains.size() + back_revision - 1)
         .render(context, extra_inputs, draw_wireframe, draw_quad, render_size);
+}
+
+void gl_state::render_imgui(int back_revision) {
+  auto &chain = chains.at(chains.size() + back_revision - 1);
+
+  for (auto &uniform : chain.discovered_uniforms) {
+    uniform.render_imgui();
+    uniform.set_uniform(chain.parsed_inputs);
+  }
 }
 
 void gl_state::get_render_ms(float times[2], int back_revision) {
@@ -202,9 +238,11 @@ void gl_state::get_render_ms(float times[2], int back_revision) {
 
 const gl::texture &gl_state::get_render_result(int back_revision) {
     auto &chain(chains.at(chains.size() + back_revision - 1));
-    auto member(std::static_pointer_cast<members::buffer_member>(*++chain.chain.members().rbegin()));
+    auto member(std::static_pointer_cast<members::buffer_member>(
+        *++chain.chain.members().rbegin()));
 
-    log->info("Fetching frame({}) rev {}", member->buffer()->id(), back_revision);
+    log->info("Fetching frame({}) rev {}", member->buffer()->id(),
+              back_revision);
 
     return *member->output();
 }

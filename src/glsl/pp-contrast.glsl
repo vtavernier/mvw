@@ -1,3 +1,5 @@
+//! float cFilterLod min=1.0 max=8.0 fmt="%2.2f" cat="Contrast correction" unm="C. LOD" def=2.0
+
 void mainImage(out vec4 O, in vec2 U)
 {
     vec4 c = texture(iChannel0, U / iResolution.xy);

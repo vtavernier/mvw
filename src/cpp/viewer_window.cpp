@@ -55,16 +55,22 @@ void viewer_window::compile_shader_source(const std::string &shader_path) {
 }
 
 void viewer_window::reload_shader() {
-    // Recompile shaders
-    if (use_make_) {
-        compile_shader_source(shader_path_);
-        compile_shader_source(postprocess_path_);
-    }
+  compile_and_discover_uniforms();
 
-    // Reinitialize chain
-    gl_state_->load_chain(shader_path_, postprocess_path_);
+  // Reinitialize chain
+  gl_state_->load_chain(shader_path_, postprocess_path_);
 
-    state_->log->info("Reloaded swap-chain");
+  state_->log->info("Reloaded swap-chain");
+}
+
+void viewer_window::compile_and_discover_uniforms() {
+  // Recompile shaders
+  if (use_make_) {
+    compile_shader_source(shader_path_);
+    compile_shader_source(postprocess_path_);
+  }
+
+  // TODO: discover and initialize uniforms
 }
 
 viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
@@ -118,11 +124,8 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     // Load static state
     state_ = std::make_unique<viewer_state>(log);
 
-    // Compile shader source if requested
-    if (use_make) {
-        compile_shader_source(shader_path);
-        compile_shader_source(postprocess_path);
-    }
+    // Compile shader source and discover uniforms
+    compile_and_discover_uniforms();
 
     // Load OpenGL dependent state
     gl_state_ = std::make_unique<gl_state>(log, width, height, geometry_path);
@@ -158,12 +161,6 @@ void viewer_window::run() {
     // Rendering time
     double t = 0.;
 
-    // Defaults
-    gl_state_->extra_inputs.get<gTilesize>() = .1f / state_->scale;
-    gl_state_->extra_inputs.get<gSplats>() = 3;
-    gl_state_->extra_inputs.get<gF0>() = 1.0f;
-    gl_state_->extra_inputs.get<cFilterLod>() = 2.0f;
-
     std::vector<float> runtime_acc(60, 0.0f);
     std::vector<float> runtime_p_acc(60, 0.0f);
     int runtime_acc_idx = -1;
@@ -194,10 +191,6 @@ void viewer_window::run() {
 
         ImGui::Checkbox("Render as quad", &state_->draw_quad);
 
-        bool show_grid = gl_state_->extra_inputs.get<dGrid>();
-        ImGui::Checkbox("Show grid", &show_grid);
-        gl_state_->extra_inputs.get<dGrid>() = show_grid ? 1 : 0;
-
         bool previous_rotate = state_->rotate_camera;
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
@@ -206,23 +199,7 @@ void viewer_window::run() {
 
         ImGui::Separator();
 
-        ImGui::SliderFloat("Tile size",
-                           &gl_state_->extra_inputs.get<gTilesize>(), 0.01f,
-                           10.0f, "%2.3f", 5.0f);
-        ImGui::SliderInt("Splats", &gl_state_->extra_inputs.get<gSplats>(), 1,
-                         30, "%d");
-        ImGui::SliderFloat("F0", &gl_state_->extra_inputs.get<gF0>(), 0.001f,
-                           100.0f, "%2.4f", 7.0f);
-
-        ImGui::SliderAngle("W0.x", &gl_state_->extra_inputs.get<gW0>().x, 0.0f,
-                           360.0f, "%2.2f");
-        ImGui::SliderAngle("W0.y", &gl_state_->extra_inputs.get<gW0>().y, 0.0f,
-                           360.0f, "%2.2f");
-
-        ImGui::Separator();
-
-        ImGui::SliderFloat("C. LOD", &gl_state_->extra_inputs.get<cFilterLod>(),
-                           1.0f, 8.0f, "%2.2f");
+        gl_state_->render_imgui(viewed_revision_);
 
         ImGui::Separator();
 
