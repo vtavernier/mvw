@@ -202,9 +202,11 @@ void gl_state::get_render_ms(float times[2], int back_revision) {
 
 const gl::texture &gl_state::get_render_result(int back_revision) {
     auto &chain(chains.at(chains.size() + back_revision - 1));
-    auto &member(*--chain.chain.members().rend());
+    auto member(std::static_pointer_cast<members::buffer_member>(*++chain.chain.members().rbegin()));
 
-    return *std::static_pointer_cast<members::buffer_member>(member)->output();
+    log->info("Fetching frame({}) rev {}", member->buffer()->id(), back_revision);
+
+    return *member->output();
 }
 
 void gl_state::allocate_textures() {
