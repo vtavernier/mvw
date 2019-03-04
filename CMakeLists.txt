@@ -1,6 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(CMAKE_POLICY VERSION_GREATER 3.12)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 project(test-models LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH
@@ -15,6 +20,7 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(Threads REQUIRED)
 
 # OpenGL libraries
+set(OpenGL_GL_PREFERENCE GLVND CACHE STRING "OpenGL preference" FORCE)
 find_package(Epoxy REQUIRED)
 find_package(Glfw3 REQUIRED)
 
@@ -28,13 +34,13 @@ find_package(ZeroMQ REQUIRED)
 add_subdirectory(libshadertoy)
 
 # Assimp library
-set(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
-set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "")
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE INTERNAL OFF)
-set(ASSIMP_BUILD_FBX_IMPORTER ON)
-set(ASSIMP_BUILD_OBJ_IMPORTER ON)
-set(ASSIMP_BUILD_STL_IMPORTER ON)
-set(ASSIMP_BUILD_NFF_IMPORTER ON)
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_STL_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_NFF_IMPORTER ON CACHE BOOL "")
 add_subdirectory(assimp EXCLUDE_FROM_ALL)
 
 # ImGui has no CMakeLists.txt for now, so manually make a library out of it
