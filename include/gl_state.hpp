@@ -54,7 +54,7 @@ struct gl_state {
                     geometry_inputs_t &extra_inputs, bool draw_wireframe,
                     bool draw_quad, const shadertoy::rsize &render_size);
 
-      private:
+       private:
         void parse_uniforms(const std::string &path,
                             std::shared_ptr<spd::logger> log);
     };
