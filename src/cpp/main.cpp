@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
     int width, height = 1024;
     bool use_make;
     std::string bind_addr;
+    bool debug;
 
     // clang-format off
     po::options_description v_desc("Viewer options");
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]) {
         ("height,H", po::value(&height)->default_value(height), "Window height")
         ("use-make,m", po::bool_switch(&use_make), "Compile the target shader file using make first")
         ("bind,b", po::value(&bind_addr)->default_value(default_bind_addr()), "Server bind address")
+        ("debug,d", po::bool_switch(&debug)->default_value(false), "Enable debug logs")
         ("help,h", "Show this help message");
     // clang-format on
 
@@ -77,6 +79,11 @@ int main(int argc, char *argv[]) {
         log->critical("Failed to initialize glfw");
         return 2;
     }
+
+    // Set log levels
+    auto level = debug ? spd::level::debug : spd::level::info;
+    utils::log::shadertoy()->set_level(level);
+    log->set_level(level);
 
     // Initialize window
     try {

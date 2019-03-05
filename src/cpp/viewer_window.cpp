@@ -93,8 +93,6 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     glfwMakeContextCurrent(window_);
     glfwSwapInterval(1);
 
-    utils::log::shadertoy()->set_level(spdlog::level::debug);
-
     glfwSetWindowUserPointer(window_, this);
 
     // Set callbacks
