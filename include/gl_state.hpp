@@ -78,6 +78,8 @@ struct gl_state {
 
     const std::vector<discovered_uniform> &get_discovered_uniforms(int back_revision = 0) const;
 
+    std::vector<discovered_uniform> &get_discovered_uniforms(int back_revision = 0);
+
     void allocate_textures();
 
    private:

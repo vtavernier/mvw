@@ -267,8 +267,11 @@ const gl::texture &gl_state::get_render_result(int back_revision) {
 }
 
 const std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(int back_revision) const {
-    auto &chain(chains.at(chains.size() + back_revision - 1));
-    return chain->discovered_uniforms;
+    return chains.at(chains.size() + back_revision - 1)->discovered_uniforms;
+}
+
+std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(int back_revision) {
+    return chains.at(chains.size() + back_revision - 1)->discovered_uniforms;
 }
 
 void gl_state::allocate_textures() {

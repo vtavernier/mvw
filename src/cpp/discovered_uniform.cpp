@@ -331,3 +331,75 @@ void try_parse_uniform(const std::string &line,
             match_ang.size() > 0));
     }
 }
+
+template <typename L, typename R>
+struct variant_conversions : public std::false_type {};
+
+template <typename T>
+struct variant_conversions<T, T> : public std::true_type {};
+
+template <>
+struct variant_conversions<glm::vec2, int> : public std::true_type {};
+template <>
+struct variant_conversions<glm::vec3, int> : public std::true_type {};
+template <>
+struct variant_conversions<glm::vec4, int> : public std::true_type {};
+
+template <>
+struct variant_conversions<glm::vec2, float> : public std::true_type {};
+template <>
+struct variant_conversions<glm::vec3, float> : public std::true_type {};
+template <>
+struct variant_conversions<glm::vec4, float> : public std::true_type {};
+
+template <>
+struct variant_conversions<glm::ivec2, int> : public std::true_type {};
+template <>
+struct variant_conversions<glm::ivec3, int> : public std::true_type {};
+template <>
+struct variant_conversions<glm::ivec4, int> : public std::true_type {};
+
+template <>
+struct variant_conversions<glm::bvec2, bool> : public std::true_type {};
+template <>
+struct variant_conversions<glm::bvec3, bool> : public std::true_type {};
+template <>
+struct variant_conversions<glm::bvec4, bool> : public std::true_type {};
+
+template <>
+struct variant_conversions<float, int> : public std::true_type {};
+template <>
+struct variant_conversions<bool, int> : public std::true_type {};
+
+struct variant_setter {
+    template <typename L, typename R>
+    typename std::enable_if<variant_conversions<L, R>::value, bool>::type
+    try_set_variant(L &dst, const R &value) {
+        dst = static_cast<L>(value);
+        return true;
+    }
+
+    template <typename L, typename R>
+    typename std::enable_if<!variant_conversions<L, R>::value, bool>::type
+    try_set_variant(L &dst, const R &value) {
+        return false;
+    }
+};
+
+bool try_set_variant(uniform_variant &dst, const uniform_variant &value) {
+    return boost::apply_visitor(
+        [&value](auto &left) -> bool {
+            return boost::apply_visitor(
+                [&left](auto &right) -> bool {
+                    return variant_setter()
+                        .try_set_variant<
+                            std::remove_const_t<
+                                std::remove_reference_t<decltype(left)>>,
+                            std::remove_const_t<
+                                std::remove_reference_t<decltype(right)>>>(
+                            left, right);
+                },
+                value);
+        },
+        dst);
+}

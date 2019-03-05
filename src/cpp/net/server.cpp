@@ -12,7 +12,12 @@ using namespace net;
 namespace net {
 typedef msgpack::type::tuple<bool, std::string> default_reply;
 typedef msgpack::type::tuple<bool, std::map<std::string, int>> getframe_reply;
-typedef msgpack::type::tuple<bool, std::vector<discovered_uniform>> getparams_reply;
+typedef msgpack::type::tuple<bool, std::vector<discovered_uniform>>
+    getparams_reply;
+typedef std::string getparam_args;
+typedef msgpack::type::tuple<bool, discovered_uniform> getparam_reply;
+typedef msgpack::type::tuple<std::string, uniform_variant> setparam_args;
+typedef bool setparam_reply;
 
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
@@ -46,6 +51,16 @@ class server_impl {
         zmq::message_t zmsg(buffer->data(), buffer->size(), free_msgpack,
                             buffer);
         socket.send(zmsg, flags);
+    }
+
+    template <typename T>
+    T recv() {
+        zmq::message_t msg;
+        socket.recv(&msg);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(msg.data()),
+                        msg.size());
+        return result.get().as<T>();
     }
 
     std::string recv_cmd() {
@@ -102,6 +117,63 @@ void server::handle_getparams(gl_state &gl_state, int revision) const {
     impl_->send(result);
 }
 
+void server::handle_getparam(gl_state &gl_state, int revision) const {
+    // Get the list of parameters
+    auto &discovered_uniforms = gl_state.get_discovered_uniforms(revision);
+
+    // Get the arguments
+    auto param_name = impl_->recv<getparam_args>();
+
+    // Find the right parameter
+    auto it = std::find_if(
+        discovered_uniforms.begin(), discovered_uniforms.end(),
+        [&param_name](const auto &item) { return item.s_name == param_name; });
+
+    if (it == discovered_uniforms.end()) {
+        net::default_reply result(false, std::string("param ") + param_name +
+                                             std::string(" not found"));
+        impl_->send(result);
+    } else {
+        net::getparam_reply result(true, *it);
+        impl_->send(result);
+    }
+}
+
+void server::handle_setparam(gl_state &gl_state, int revision,
+                             bool &changed_state) const {
+    // Get the list of parameters
+    auto &discovered_uniforms = gl_state.get_discovered_uniforms(revision);
+
+    // Get the arguments
+    auto args = impl_->recv<setparam_args>();
+    const auto &param_name = args.get<0>();
+
+    // Find the right parameter
+    auto it = std::find_if(
+        discovered_uniforms.begin(), discovered_uniforms.end(),
+        [&param_name](const auto &item) { return item.s_name == param_name; });
+
+    if (it == discovered_uniforms.end()) {
+        net::default_reply result(false, std::string("param ") + param_name +
+                                             std::string(" not found"));
+        impl_->send(result);
+    } else {
+        // Try to set it with the decoded value
+        bool set = try_set_variant(it->value, args.get<1>());
+
+        if (set) {
+            // Send success response
+            net::setparam_reply result(true);
+            impl_->send(result);
+        } else {
+            // Send failure response
+            net::default_reply result(
+                false, std::string("invalid type for param " + param_name));
+            impl_->send(result);
+        }
+    }
+}
+
 server::server(const std::string &bind_addr)
     : impl_{std::make_unique<server_impl>(bind_addr)} {}
 
@@ -136,8 +208,8 @@ void server::poll(gl_state &gl_state, int revision) const {
 
             if (cmdname.compare(CMD_NAME_GETFRAME) == 0) {
                 if (changed_state) {
-                    // We changed some render state, so the user probably wants the
-                    // updated result instead of the current frame
+                    // We changed some render state, so the user probably wants
+                    // the updated result instead of the current frame
                     impl_->getframe_pending = true;
                     next_frame = true;
                 } else {
@@ -145,6 +217,10 @@ void server::poll(gl_state &gl_state, int revision) const {
                 }
             } else if (cmdname.compare(CMD_NAME_GETPARAMS) == 0) {
                 handle_getparams(gl_state, revision);
+            } else if (cmdname.compare(CMD_NAME_GETPARAM) == 0) {
+                handle_getparam(gl_state, revision);
+            } else if (cmdname.compare(CMD_NAME_SETPARAM) == 0) {
+                handle_setparam(gl_state, revision, changed_state);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);

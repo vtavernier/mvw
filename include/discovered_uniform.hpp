@@ -205,4 +205,6 @@ void try_parse_uniform(const std::string &line,
                        std::vector<discovered_uniform> &discovered_uniforms,
                        std::shared_ptr<spdlog::logger> log);
 
+bool try_set_variant(uniform_variant &dst, const uniform_variant &value);
+
 #endif /* _DISCOVERED_UNIFORM_HPP_ */

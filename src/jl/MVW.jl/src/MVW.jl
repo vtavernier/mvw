@@ -1,6 +1,6 @@
 module MVW
     import Images, ZMQ, MsgPack
-    export Connection, connect, getframe, getparams
+    export Connection, connect, getframe, getparams, getparam, setparam
 
     struct Connection
         socket::ZMQ.Socket
@@ -57,6 +57,44 @@ module MVW
             details
         else
             error("getparams failed: " * details)
+        end
+    end
+
+    function getparam(connection::Connection, param::AbstractString)
+        # Send getparam request
+        msg = ZMQ.Message("getparam")
+        ZMQ.send(connection.socket, msg; more=true)
+
+        # Send argument
+        msg = ZMQ.Message(MsgPack.pack(param))
+        ZMQ.send(connection.socket, msg)
+
+        # Fetch response
+        (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+        if success
+            details
+        else
+            error("getparam failed: " * details)
+        end
+    end
+
+    function setparam(connection::Connection, param::AbstractString, value)
+        # Send setparam request
+        msg = ZMQ.Message("setparam")
+        ZMQ.send(connection.socket, msg; more=true)
+
+        # Send argument
+        msg = ZMQ.Message(MsgPack.pack((param, value)))
+        ZMQ.send(connection.socket, msg)
+
+        # Fetch response
+        response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+        if response isa Bool
+        else
+            (success, details) = response
+            error("setparam failed: " * details)
         end
     end
 end # module
