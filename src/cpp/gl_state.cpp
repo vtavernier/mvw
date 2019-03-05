@@ -132,28 +132,27 @@ gl_state::chain_instance::chain_instance(
         postprocess_input->min_filter(GL_LINEAR_MIPMAP_LINEAR);
         postprocess_buffer->inputs().emplace_back(postprocess_input);
 
-        // Render the output of the postprocess pass to the default framebuffer
-        auto postprocess_member =
-            chain.emplace_back(postprocess_buffer, make_size_ref(render_size),
-                               member_swap_policy::single_buffer);
-
-        // Clear the background of the postprocess buffer
-        postprocess_member->state().clear_color({0.15f, 0.15f, 0.15f, 1.f});
-        postprocess_member->state().clear_bits(GL_COLOR_BUFFER_BIT);
-
-        postprocess_member->state().enable(GL_BLEND);
-
-        postprocess_member->state().blend_mode_rgb(GL_FUNC_ADD);
-        postprocess_member->state().blend_src_rgb(GL_SRC_ALPHA);
-        postprocess_member->state().blend_dst_rgb(GL_ONE_MINUS_SRC_ALPHA);
-
-        postprocess_member->state().blend_mode_alpha(GL_FUNC_ADD);
-        postprocess_member->state().blend_src_alpha(GL_SRC_ALPHA);
-        postprocess_member->state().blend_dst_alpha(GL_ONE_MINUS_SRC_ALPHA);
+        // Add postprocess pass to the chain
+        chain.emplace_back(postprocess_buffer, make_size_ref(render_size),
+                           member_swap_policy::single_buffer);
     }
 
-    chain.push_back(
-        members::make_screen(window_width, 0, make_size_ref(render_size)));
+    auto screen_member = members::make_screen(window_width, 0, make_size_ref(render_size));
+    chain.push_back(screen_member);
+
+    // Clear the background before rendering on screen
+    screen_member->state().clear_color({0.15f, 0.15f, 0.15f, 1.f});
+    screen_member->state().clear_bits(GL_COLOR_BUFFER_BIT);
+
+    screen_member->state().enable(GL_BLEND);
+
+    screen_member->state().blend_mode_rgb(GL_FUNC_ADD);
+    screen_member->state().blend_src_rgb(GL_SRC_ALPHA);
+    screen_member->state().blend_dst_rgb(GL_ONE_MINUS_SRC_ALPHA);
+
+    screen_member->state().blend_mode_alpha(GL_FUNC_ADD);
+    screen_member->state().blend_src_alpha(GL_SRC_ALPHA);
+    screen_member->state().blend_dst_alpha(GL_ONE_MINUS_SRC_ALPHA);
 
     // Initialize context
     context.init(chain);
