@@ -168,8 +168,9 @@ gl_state::chain_instance::chain_instance(
 
 void gl_state::load_chain(const std::string &shader_path,
                           const std::string &postprocess_path) {
-    chains.emplace_back(log, g_buffer_template_, shader_path, postprocess_path,
-                        context, render_size, geometry);
+    chains.emplace_back(std::make_unique<chain_instance>(
+        log, g_buffer_template_, shader_path, postprocess_path, context,
+        render_size, geometry));
 }
 
 void gl_state::chain_instance::render(shadertoy::render_context &context,
@@ -214,7 +215,7 @@ void gl_state::chain_instance::parse_uniforms(
 
 void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision) {
     chains.at(chains.size() + back_revision - 1)
-        .render(context, extra_inputs, draw_wireframe, draw_quad, render_size);
+        ->render(context, extra_inputs, draw_wireframe, draw_quad, render_size);
 }
 
 void gl_state::render_imgui(int back_revision) {
@@ -222,7 +223,7 @@ void gl_state::render_imgui(int back_revision) {
 
     // Group by category
     std::map<std::string, std::vector<discovered_uniform *>> uniform_categories;
-    for (auto &uniform : chain.discovered_uniforms) {
+    for (auto &uniform : chain->discovered_uniforms) {
         auto it = uniform_categories.find(uniform.s_cat);
         if (it == uniform_categories.end()) {
             uniform_categories.emplace(
@@ -237,7 +238,7 @@ void gl_state::render_imgui(int back_revision) {
 
         for (auto &uniform : it->second) {
             uniform->render_imgui();
-            uniform->set_uniform(chain.parsed_inputs);
+            uniform->set_uniform(chain->parsed_inputs);
         }
 
         ImGui::Separator();
@@ -247,10 +248,10 @@ void gl_state::render_imgui(int back_revision) {
 void gl_state::get_render_ms(float times[2], int back_revision) {
     auto &chain(chains.at(chains.size() + back_revision - 1));
 
-    times[0] = chain.geometry_buffer->elapsed_time() / 1.0e6f;
+    times[0] = chain->geometry_buffer->elapsed_time() / 1.0e6f;
 
-    if (chain.postprocess_buffer)
-        times[1] = chain.postprocess_buffer->elapsed_time() / 1.0e6f;
+    if (chain->postprocess_buffer)
+        times[1] = chain->postprocess_buffer->elapsed_time() / 1.0e6f;
     else
         times[1] = 0.0f;
 }
@@ -258,7 +259,7 @@ void gl_state::get_render_ms(float times[2], int back_revision) {
 const gl::texture &gl_state::get_render_result(int back_revision) {
     auto &chain(chains.at(chains.size() + back_revision - 1));
     auto member(std::static_pointer_cast<members::buffer_member>(
-        *++chain.chain.members().rbegin()));
+        *++chain->chain.members().rbegin()));
 
     log->info("Fetching frame({}) rev {}", member->buffer()->id(),
               back_revision);
@@ -268,7 +269,7 @@ const gl::texture &gl_state::get_render_result(int back_revision) {
 
 void gl_state::allocate_textures() {
     for (auto &chain : chains) {
-        context.allocate_textures(chain.chain);
-        context.allocate_textures(chain.geometry_chain);
+        context.allocate_textures(chain->chain);
+        context.allocate_textures(chain->geometry_chain);
     }
 }

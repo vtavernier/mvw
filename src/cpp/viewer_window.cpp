@@ -163,7 +163,7 @@ void viewer_window::run() {
 
     std::vector<float> runtime_acc(60, 0.0f);
     std::vector<float> runtime_p_acc(60, 0.0f);
-    int runtime_acc_idx = -1;
+    int runtime_acc_idx = 0;
 
     while (!glfwWindowShouldClose(window_)) {
         // Poll events

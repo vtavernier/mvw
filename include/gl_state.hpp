@@ -60,7 +60,7 @@ struct gl_state {
     };
 
     /// Loaded chain states
-    std::vector<chain_instance> chains;
+    std::vector<std::unique_ptr<chain_instance>> chains;
 
     gl_state(std::shared_ptr<spd::logger> log, int width, int height,
              const std::string &geometry_path);
