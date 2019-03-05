@@ -266,6 +266,11 @@ const gl::texture &gl_state::get_render_result(int back_revision) {
     return *member->output();
 }
 
+const std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(int back_revision) const {
+    auto &chain(chains.at(chains.size() + back_revision - 1));
+    return chain->discovered_uniforms;
+}
+
 void gl_state::allocate_textures() {
     for (auto &chain : chains) {
         context.allocate_textures(chain->chain);

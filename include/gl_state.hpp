@@ -76,6 +76,8 @@ struct gl_state {
 
     const shadertoy::gl::texture &get_render_result(int back_revision = 0);
 
+    const std::vector<discovered_uniform> &get_discovered_uniforms(int back_revision = 0) const;
+
     void allocate_textures();
 
    private:

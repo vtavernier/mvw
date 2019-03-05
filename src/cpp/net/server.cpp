@@ -12,6 +12,7 @@ using namespace net;
 namespace net {
 typedef msgpack::type::tuple<bool, std::string> default_reply;
 typedef msgpack::type::tuple<bool, std::map<std::string, int>> getframe_reply;
+typedef msgpack::type::tuple<bool, std::vector<discovered_uniform>> getparams_reply;
 
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
@@ -92,6 +93,15 @@ void server::handle_getframe(gl_state &gl_state, int revision) const {
     impl_->socket.send(data_msg);
 }
 
+void server::handle_getparams(gl_state &gl_state, int revision) const {
+    // Get the list of parameters
+    auto &discovered_uniforms = gl_state.get_discovered_uniforms(revision);
+
+    // Return result
+    net::getparams_reply result(true, discovered_uniforms);
+    impl_->send(result);
+}
+
 server::server(const std::string &bind_addr)
     : impl_{std::make_unique<server_impl>(bind_addr)} {}
 
@@ -106,10 +116,10 @@ void server::poll(gl_state &gl_state, int revision) const {
 
     // Check for pending getframe that we have to reply to
     if (impl_->getframe_pending) {
-            handle_getframe(gl_state, revision);
+        handle_getframe(gl_state, revision);
 
-            // Acknowledge getframe
-            impl_->getframe_pending = false;
+        // Acknowledge getframe
+        impl_->getframe_pending = false;
     }
 
     // Poll for incoming messages
@@ -133,6 +143,8 @@ void server::poll(gl_state &gl_state, int revision) const {
                 } else {
                     handle_getframe(gl_state, revision);
                 }
+            } else if (cmdname.compare(CMD_NAME_GETPARAMS) == 0) {
+                handle_getparams(gl_state, revision);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);

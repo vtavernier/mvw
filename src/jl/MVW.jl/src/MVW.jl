@@ -1,6 +1,6 @@
 module MVW
     import Images, ZMQ, MsgPack
-    export Connection, connect, getframe
+    export Connection, connect, getframe, getparams
 
     struct Connection
         socket::ZMQ.Socket
@@ -42,6 +42,21 @@ module MVW
             Images.colorview(Images.RGBA, PermutedDimsArray(reverse(reshape(image_data, (4, width, height)), dims=3), (1,3,2)))
         else
             error("getframe failed: " * details)
+        end
+    end
+
+    function getparams(connection::Connection)
+        # Send getparams request
+        msg = ZMQ.Message("getparams")
+        ZMQ.send(connection.socket, msg)
+
+        # Fetch response
+        (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+        if success
+            details
+        else
+            error("getparams failed: " * details)
         end
     end
 end # module
