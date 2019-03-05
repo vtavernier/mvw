@@ -201,7 +201,7 @@ void viewer_window::run() {
 
         gl_state_->render_imgui(viewed_revision_);
 
-        ImGui::Separator();
+        ImGui::Text("Performance");
 
         char label_buf[30];
         char overlay_buf[30];
