@@ -26,11 +26,14 @@ struct discovered_uniform {
     std::string s_name;
     std::string s_username;
 
+    bool s_angle;
+
     discovered_uniform(uniform_variant s_min, uniform_variant s_max,
                        uniform_variant s_pow, uniform_variant s_def,
                        const std::string &s_fmt, const std::string &s_cat,
                        const std::string &s_name,
-                       const std::string &s_username);
+                       const std::string &s_username,
+                       bool s_angle);
 
     void set_uniform(parsed_inputs_t &inputs);
 
@@ -43,7 +46,7 @@ struct discovered_uniform {
         const std::string &l_fmt, const std::string &l_pow,
         const std::string &l_cat, const std::string &l_def,
         const std::string &l_name, const std::string &l_unm,
-        const std::string &type);
+        const std::string &type, bool l_ang);
 };
 
 void try_parse_uniform(const std::string &line,
