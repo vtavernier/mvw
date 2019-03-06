@@ -9,12 +9,11 @@ target_include_directories(mvw PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(mvw PUBLIC shadertoy-shared ${Boost_filesystem_LIBRARY} assimp)
 target_compile_options(mvw PRIVATE -Wall;-Werror=return-type)
 
-# Get net server sources
-file(GLOB VIEWER_NET_SOURCES ${SRC}/net/*.cpp)
-
 # Create viewer target
-file(GLOB VIEWER_SOURCES ${SRC}/*.cpp)
-add_executable(viewer ${VIEWER_SOURCES} ${VIEWER_NET_SOURCES})
+file(GLOB VIEWER_SOURCES ${SRC}/*.cpp ${SRC}/net/*.cpp
+    ${INCLUDE_ROOT}/*.hpp ${INCLUDE_ROOT}/net/*.hpp
+    ${INCLUDE_ROOT}/detail/*.hpp)
+add_executable(viewer ${VIEWER_SOURCES})
 
 target_include_directories(viewer PRIVATE
     ${INCLUDE_ROOT}
