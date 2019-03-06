@@ -1,100 +1,34 @@
 module MVW
-    import Images, ZMQ, MsgPack
-    export Connection, connect, getframe, getparams, getparam, setparam
+# Import RPC module
+include("RPC.jl")
 
-    struct Connection
-        socket::ZMQ.Socket
+# An abstract connection to an instance of mvw
+abstract type AbstractMvw end
+
+# A connection to an existing instance
+struct RemoteMvw <: AbstractMvw
+    connection::RPC.Connection
+end
+
+# Default bind address for a remote instance of mvw
+function default_bind_addr()
+    @static if Sys.iswindows()
+        return "tcp://127.0.0.1:7178"
+    else
+        tmpdir = haskey(ENV, "TMPDIR") ? ENV["TMPDIR"] : "/tmp"
+        return "ipc://$tmpdir/mvw_default.sock"
     end
+end
 
-    function default_bind_addr()
-        @static if Sys.iswindows()
-            return "tcp://127.0.0.1:7178"
-        else
-            tmpdir = haskey(ENV, "TMPDIR") ? ENV["TMPDIR"] : "/tmp"
-            return "ipc://$tmpdir/mvw_default.sock"
-        end
-    end
+# Connect to a remote instance of mvw
+function connect(target::AbstractString = default_bind_addr())
+    RemoteMvw(RPC.connect(target))
+end
 
-    function connect(target = default_bind_addr())
-        # Establish connection with REQ socket
-        connection = Connection(ZMQ.Socket(ZMQ.REQ))
-        ZMQ.connect(connection.socket, target)
-        connection
-    end
+getframe(mvw::RemoteMvw) = RPC.getframe(mvw.connection)
+getparams(mvw::RemoteMvw) = RPC.getparams(mvw.connection)
+getparam(mvw::RemoteMvw) = RPC.getparam(mvw.connection)
+setparam(mvw::RemoteMvw) = RPC.setparam(mvw.connection)
 
-    function getframe(connection::Connection)
-        # Send getframe request
-        msg = ZMQ.Message("getframe")
-        ZMQ.send(connection.socket, msg)
-
-        # Fetch response
-        (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
-
-        if success
-            # Fetch image format
-            (width, height) = map(k -> details[k], ["width", "height"])
-
-            # Fetch image data
-            image_data = ZMQ.recv(connection.socket, Vector{Float32})
-            @assert length(image_data) == width * height * 4
-
-            # Make image object
-            Images.colorview(Images.RGBA, PermutedDimsArray(reverse(reshape(image_data, (4, width, height)), dims=3), (1,3,2)))
-        else
-            error("getframe failed: " * details)
-        end
-    end
-
-    function getparams(connection::Connection)
-        # Send getparams request
-        msg = ZMQ.Message("getparams")
-        ZMQ.send(connection.socket, msg)
-
-        # Fetch response
-        (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
-
-        if success
-            details
-        else
-            error("getparams failed: " * details)
-        end
-    end
-
-    function getparam(connection::Connection, param::AbstractString)
-        # Send getparam request
-        msg = ZMQ.Message("getparam")
-        ZMQ.send(connection.socket, msg; more=true)
-
-        # Send argument
-        msg = ZMQ.Message(MsgPack.pack(param))
-        ZMQ.send(connection.socket, msg)
-
-        # Fetch response
-        (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
-
-        if success
-            details
-        else
-            error("getparam failed: " * details)
-        end
-    end
-
-    function setparam(connection::Connection, param::AbstractString, value)
-        # Send setparam request
-        msg = ZMQ.Message("setparam")
-        ZMQ.send(connection.socket, msg; more=true)
-
-        # Send argument
-        msg = ZMQ.Message(MsgPack.pack((param, value)))
-        ZMQ.send(connection.socket, msg)
-
-        # Fetch response
-        response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
-
-        if response isa Bool
-        else
-            (success, details) = response
-            error("setparam failed: " * details)
-        end
-    end
+export connect, getframe, getparams, getparam, setparam
 end # module
