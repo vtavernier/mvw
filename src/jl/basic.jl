@@ -1,4 +1,4 @@
 using MVW, Images
 
 c = connect()
-save("basic.png", getframe(c))
+save("../../build/basic.png", getframe(c))
