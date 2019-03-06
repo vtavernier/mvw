@@ -2,9 +2,12 @@
 #include <msgpack.hpp>
 #include <zmq.hpp>
 
+#include <optional>
+
 #include "gl_state.hpp"
 #include "log.hpp"
 
+#include "detail/rsize.hpp"
 #include "net/server.hpp"
 
 using namespace net;
@@ -12,6 +15,7 @@ using namespace net;
 namespace net {
 typedef msgpack::type::tuple<bool, std::string> default_reply;
 typedef msgpack::type::tuple<bool, std::map<std::string, int>> getframe_reply;
+typedef shadertoy::rsize getframe_args;
 typedef msgpack::type::tuple<bool, std::vector<discovered_uniform>>
     getparams_reply;
 typedef std::string getparam_args;
@@ -29,13 +33,13 @@ class server_impl {
     zmq::context_t context;
     zmq::socket_t socket;
     std::shared_ptr<spdlog::logger> logger;
-    bool getframe_pending;
+    std::optional<getframe_args> getframe_pending;
 
     server_impl(const server_options &opt)
         : context(),
           socket(context, ZMQ_REP),
           logger(spdlog::stderr_color_st("server")),
-          getframe_pending(false) {
+          getframe_pending{} {
         logger->set_level(spdlog::level::info);
 
         logger->info("Binding to {}", opt.bind_addr);
@@ -188,10 +192,13 @@ void server::poll(gl_state &gl_state, int revision) const {
 
     // Check for pending getframe that we have to reply to
     if (impl_->getframe_pending) {
+        // Note that it is unlikely the rendering size changed between two
+        // requests So we don't check again that gl_state.render_size matches
+        // getframe_pending args
         handle_getframe(gl_state, revision);
 
         // Acknowledge getframe
-        impl_->getframe_pending = false;
+        impl_->getframe_pending.reset();
     }
 
     // Poll for incoming messages
@@ -207,10 +214,21 @@ void server::poll(gl_state &gl_state, int revision) const {
             auto cmdname = impl_->recv_cmd();
 
             if (cmdname.compare(CMD_NAME_GETFRAME) == 0) {
+                auto args = impl_->recv<getframe_args>();
+
+                if (args != gl_state.render_size) {
+                    // We are not rendering at the right size
+                    gl_state.render_size = args;
+                    gl_state.allocate_textures();
+
+                    // The current frame is thus invalid w.r.t the requested size
+                    changed_state = true;
+                }
+
                 if (changed_state) {
                     // We changed some render state, so the user probably wants
                     // the updated result instead of the current frame
-                    impl_->getframe_pending = true;
+                    impl_->getframe_pending = args;
                     next_frame = true;
                 } else {
                     handle_getframe(gl_state, revision);

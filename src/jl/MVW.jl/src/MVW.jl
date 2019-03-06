@@ -25,10 +25,10 @@ function connect(target::AbstractString = default_bind_addr())
     RemoteMvw(RPC.connect(target))
 end
 
-getframe(mvw::RemoteMvw) = RPC.getframe(mvw.connection)
-getparams(mvw::RemoteMvw) = RPC.getparams(mvw.connection)
-getparam(mvw::RemoteMvw) = RPC.getparam(mvw.connection)
-setparam(mvw::RemoteMvw) = RPC.setparam(mvw.connection)
+getframe(mvw::RemoteMvw, args...; kwargs...) = RPC.getframe(mvw.connection, args...; kwargs...)
+getparams(mvw::RemoteMvw, args...; kwargs...) = RPC.getparams(mvw.connection, args...; kwargs...)
+getparam(mvw::RemoteMvw, args...; kwargs...) = RPC.getparam(mvw.connection, args...; kwargs...)
+setparam(mvw::RemoteMvw, args...; kwargs...) = RPC.setparam(mvw.connection, args...; kwargs...)
 
 export connect, getframe, getparams, getparam, setparam
 end # module

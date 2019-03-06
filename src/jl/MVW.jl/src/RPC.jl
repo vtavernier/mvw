@@ -13,10 +13,13 @@ function connect(target::AbstractString)
     connection
 end
 
-function getframe(connection::Connection)
+function getframe(connection::Connection; size::Tuple{Int, Int} = (256, 256))
     # Send getframe request
     msg = ZMQ.Message("getframe")
-    ZMQ.send(connection.socket, msg)
+    ZMQ.send(connection.socket, msg, more=true)
+
+    # Send args
+    ZMQ.send(connection.socket, MsgPack.pack(size))
 
     # Fetch response
     (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))

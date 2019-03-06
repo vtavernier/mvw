@@ -23,6 +23,8 @@ class viewer_window {
 
     viewer_options opt_;
 
+    shadertoy::rsize window_render_size_;
+
     int viewed_revision_;
 
     static void glfw_window_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);

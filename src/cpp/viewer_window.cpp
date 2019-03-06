@@ -21,14 +21,17 @@ using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
 void viewer_window::reload_shader() {
-  // Reinitialize chain
-  gl_state_->load_chain(opt_.program);
+    // Reinitialize chain
+    gl_state_->load_chain(opt_.program);
 
-  VLOG->info("Reloaded swap-chain");
+    VLOG->info("Reloaded swap-chain");
 }
 
 viewer_window::viewer_window(viewer_options &&opt)
-    : server_{nullptr}, opt_{opt}, viewed_revision_(0) {
+    : server_{nullptr},
+      opt_{opt},
+      window_render_size_(opt_.frame.width, opt_.frame.height),
+      viewed_revision_(0) {
     window_ =
         glfwCreateWindow(opt_.frame.width + window_width, opt_.frame.height,
                          "Test model viewer", nullptr, nullptr);
@@ -111,7 +114,7 @@ void viewer_window::run() {
         glfwPollEvents();
 
         // Clear the default framebuffer (background for ImGui)
-        gl_call(glViewport, 0, 0, window_width, gl_state_->render_size.height);
+        gl_call(glViewport, 0, 0, window_width, window_render_size_.height);
         gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
         gl_call(glClearColor, 0.0f, 0.0f, 0.0f, 1.0f);
         gl_call(glClearDepth, 1.f);
@@ -124,7 +127,7 @@ void viewer_window::run() {
 
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize(
-            ImVec2(window_width, gl_state_->render_size.height));
+            ImVec2(window_width, window_render_size_.height));
         ImGui::Begin("mvw", NULL,
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
@@ -136,7 +139,8 @@ void viewer_window::run() {
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
 
-        ImGui::SliderInt("Revision", &viewed_revision_, -(gl_state_->chains.size() - 1), 0, "%d");
+        ImGui::SliderInt("Revision", &viewed_revision_,
+                         -(gl_state_->chains.size() - 1), 0, "%d");
 
         ImGui::Separator();
 
@@ -148,19 +152,23 @@ void viewer_window::run() {
         char overlay_buf[30];
 
         {
-            auto mean = std::accumulate(runtime_acc.begin(), runtime_acc.end(), 0.0f)
-                / runtime_acc.size();
+            auto mean =
+                std::accumulate(runtime_acc.begin(), runtime_acc.end(), 0.0f) /
+                runtime_acc.size();
             sprintf(label_buf, "N %2.3fms", runtime_acc[runtime_acc_idx]);
             sprintf(overlay_buf, "a %2.3fms", mean);
-            ImGui::PlotHistogram(label_buf, runtime_acc.data(), runtime_acc.size(), 0, overlay_buf);
+            ImGui::PlotHistogram(label_buf, runtime_acc.data(),
+                                 runtime_acc.size(), 0, overlay_buf);
         }
 
         if (gl_state_->has_postprocess(viewed_revision_)) {
-            auto mean = std::accumulate(runtime_p_acc.begin(), runtime_p_acc.end(), 0.0f)
-                / runtime_acc.size();
+            auto mean = std::accumulate(runtime_p_acc.begin(),
+                                        runtime_p_acc.end(), 0.0f) /
+                        runtime_acc.size();
             sprintf(label_buf, "P %2.3fms", runtime_p_acc[runtime_acc_idx]);
             sprintf(overlay_buf, "a %2.3fms", mean);
-            ImGui::PlotHistogram(label_buf, runtime_p_acc.data(), runtime_p_acc.size(), 0, overlay_buf);
+            ImGui::PlotHistogram(label_buf, runtime_p_acc.data(),
+                                 runtime_p_acc.size(), 0, overlay_buf);
         }
 
         ImGui::End();
@@ -173,16 +181,17 @@ void viewer_window::run() {
         gl_state_->context.state().get<iFrame>() = state_->frame_count;
 
         // Projection matrix display range : 0.1 unit <-> 100 units
-        glm::mat4 Projection = glm::perspective(
-            glm::radians(25.0f), (float)gl_state_->render_size.width /
-                                     (float)gl_state_->render_size.height,
-            0.1f, 100.0f);
+        glm::mat4 Projection =
+            glm::perspective(glm::radians(25.0f),
+                             (float)gl_state_->render_size.width /
+                                 (float)gl_state_->render_size.height,
+                             0.1f, 100.0f);
 
         // Camera matrix
         glm::mat4 View = glm::lookAt(glm::vec3(5, 2, 0),  // Location
                                      glm::vec3(0, 0, 0),  // Target
                                      glm::vec3(0, 1, 0)   // Up
-                                     );
+        );
 
         // Model matrix
         auto Model = glm::scale(glm::mat4(1.f), glm::vec3(state_->scale));
@@ -202,11 +211,11 @@ void viewer_window::run() {
         gl_state_->extra_inputs.get<mProj>() = Projection;
 
         // Render current revision
-        gl_state_->render(state_->draw_wireframe, state_->draw_quad, viewed_revision_);
+        gl_state_->render(state_->draw_wireframe, state_->draw_quad,
+                          viewed_revision_);
 
         // Poll server instance for requests
-        if (server_)
-            server_->poll(*gl_state_, viewed_revision_);
+        if (server_) server_->poll(*gl_state_, viewed_revision_);
 
         // Render ImGui overlay
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -217,8 +226,8 @@ void viewer_window::run() {
         // Measure time
         float ts[2];
         gl_state_->get_render_ms(ts, viewed_revision_);
-        runtime_acc[(runtime_acc_idx = (runtime_acc_idx + 1) %
-                     runtime_acc.size())] = ts[0];
+        runtime_acc[(runtime_acc_idx =
+                         (runtime_acc_idx + 1) % runtime_acc.size())] = ts[0];
         runtime_p_acc[runtime_acc_idx] = ts[1];
 
         // Update time and framecount
@@ -251,8 +260,8 @@ void viewer_window::glfw_mouse_button_callback(int button, int action,
 }
 
 void viewer_window::glfw_set_framebuffer_size(int width, int height) {
-    gl_state_->render_size = shadertoy::rsize(width - window_width, height);
-    gl_state_->allocate_textures();
+    window_render_size_ = shadertoy::rsize(width - window_width, height);
+    // gl_state_->allocate_textures();
 }
 
 void viewer_window::glfw_key_callback(int key, int scancode, int action,
