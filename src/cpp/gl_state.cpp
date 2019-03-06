@@ -47,12 +47,12 @@ gl_state::gl_state(const frame_options &opt)
     // Load customized shader templates
     g_buffer_template_->emplace(
         GL_VERTEX_SHADER,
-        compiler::shader_template::parse_file("../shaders/vertex.glsl"));
+        compiler::shader_template::parse_file(SHADERS_BASE "/vertex.glsl"));
 
     // Same for fragment shader
     g_buffer_template_->emplace(
         GL_FRAGMENT_SHADER,
-        compiler::shader_template::parse_file("../shaders/fragment.glsl"));
+        compiler::shader_template::parse_file(SHADERS_BASE "/fragment.glsl"));
 
     // Force compilation of new template
     g_buffer_template_->compile(GL_VERTEX_SHADER);
