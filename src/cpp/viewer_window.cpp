@@ -17,74 +17,21 @@
 
 #include "viewer_window.hpp"
 
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
-void viewer_window::compile_shader_source(const std::string &shader_path) {
-    if (shader_path.empty())
-        return;
-
-    state_->log->info("Compiling {} using make", shader_path);
-
-    int pid = fork();
-
-    if (pid == 0) {
-        size_t begin;
-        if ((begin = shader_path.find_last_of('/')) != std::string::npos) {
-            begin++;
-        } else {
-            begin = 0;
-        }
-
-        std::string basename(shader_path.begin() + begin, shader_path.end());
-        const char *args[] = {"make", basename.c_str(), NULL};
-
-        execvp("make", const_cast<char *const *>(args));
-    } else {
-        int status;
-        waitpid(pid, &status, 0);
-
-        if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
-            throw std::runtime_error("Failed to compile shader source code");
-        }
-    }
-}
-
 void viewer_window::reload_shader() {
-  compile_and_discover_uniforms();
-
   // Reinitialize chain
-  gl_state_->load_chain(shader_path_, postprocess_path_);
+  gl_state_->load_chain(opt_.program);
 
-  state_->log->info("Reloaded swap-chain");
+  VLOG->info("Reloaded swap-chain");
 }
 
-void viewer_window::compile_and_discover_uniforms() {
-  // Recompile shaders
-  if (use_make_) {
-    compile_shader_source(shader_path_);
-    compile_shader_source(postprocess_path_);
-  }
-
-  // TODO: discover and initialize uniforms
-}
-
-viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
-                             int height, const std::string &geometry_path,
-                             const std::string &shader_path,
-                             const std::string &postprocess_path, bool use_make,
-                             const std::string &bind_addr)
-    : server_{nullptr},
-      shader_path_(shader_path),
-      postprocess_path_(postprocess_path),
-      use_make_(use_make),
-      viewed_revision_(0) {
+viewer_window::viewer_window(viewer_options &&opt)
+    : server_{nullptr}, opt_{opt}, viewed_revision_(0) {
     window_ =
-        glfwCreateWindow(width, height, "Test model viewer", nullptr, nullptr);
+        glfwCreateWindow(opt_.frame.width + window_width, opt_.frame.height,
+                         "Test model viewer", nullptr, nullptr);
 
     if (!window_) {
         throw std::runtime_error("Failed to create window");
@@ -120,39 +67,35 @@ viewer_window::viewer_window(std::shared_ptr<spd::logger> log, int width,
     ImGui::GetStyle().WindowRounding = 0.0f;
 
     // Load static state
-    state_ = std::make_unique<viewer_state>(log);
-
-    // Compile shader source and discover uniforms
-    compile_and_discover_uniforms();
+    state_ = std::make_unique<viewer_state>();
 
     // Load OpenGL dependent state
-    gl_state_ = std::make_unique<gl_state>(log, width, height, geometry_path);
+    gl_state_ = std::make_unique<gl_state>(opt_.frame);
 
     // Load the initial state
-    gl_state_->load_chain(shader_path, postprocess_path);
+    gl_state_->load_chain(opt_.program);
 
-    // Compute model scale, update state
-    //  Fetch dimensions of model
-    glm::vec3 bbox_min, bbox_max;
-    gl_state_->geometry->get_dimensions(bbox_min, bbox_max);
-    glm::dvec3 centroid = gl_state_->geometry->get_centroid();
-
-    glm::vec3 dimensions = bbox_max - bbox_min,
-              center = (bbox_max + bbox_min) / 2.f;
-    log->info("Object dimensions: {}", glm::to_string(dimensions));
-    log->info("Object center: {}", glm::to_string(center));
-    log->info("Object centroid: {}", glm::to_string(centroid));
-
-    //  Set state_
-    gl_state_->extra_inputs.get<bboxMax>() = bbox_max;
-    gl_state_->extra_inputs.get<bboxMin>() = bbox_min;
-
-    state_->center = center;
-    state_->scale = 1. / dimensions.z;
+    // Load the geometry
+    gl_state_->load_geometry(opt_.geometry);
+    state_->center = gl_state_->center;
+    state_->scale = gl_state_->scale;
 
     // Start server
-    if (!bind_addr.empty())
-        server_ = std::make_unique<net::server>(bind_addr);
+    if (!opt_.server.bind_addr.empty())
+        server_ = std::make_unique<net::server>(opt_.server);
+}
+
+viewer_window::~viewer_window() {
+    if (window_) {
+        state_ = {};
+        gl_state_ = {};
+
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+
+        glfwDestroyWindow(window_);
+    }
 }
 
 void viewer_window::run() {
@@ -212,7 +155,7 @@ void viewer_window::run() {
             ImGui::PlotHistogram(label_buf, runtime_acc.data(), runtime_acc.size(), 0, overlay_buf);
         }
 
-        if (!postprocess_path_.empty()) {
+        if (gl_state_->has_postprocess(viewed_revision_)) {
             auto mean = std::accumulate(runtime_p_acc.begin(), runtime_p_acc.end(), 0.0f)
                 / runtime_acc.size();
             sprintf(label_buf, "P %2.3fms", runtime_p_acc[runtime_acc_idx]);
@@ -281,19 +224,6 @@ void viewer_window::run() {
         // Update time and framecount
         t = glfwGetTime();
         state_->frame_count++;
-    }
-}
-
-viewer_window::~viewer_window() {
-    if (window_) {
-        state_ = {};
-        gl_state_ = {};
-
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-
-        glfwDestroyWindow(window_);
     }
 }
 

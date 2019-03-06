@@ -2,7 +2,7 @@
 
 #include "viewer_state.hpp"
 
-viewer_state::viewer_state(std::shared_ptr<spd::logger> log)
+viewer_state::viewer_state()
     : draw_wireframe(false),
       draw_quad(false),
       rotate_camera(false),
@@ -15,8 +15,7 @@ viewer_state::viewer_state(std::shared_ptr<spd::logger> log)
       pressed_buttons(0),
       frame_count(0),
       center(0.f),
-      scale(0.f),
-      log(log) {}
+      scale(0.f) {}
 
 void viewer_state::update_rotation(bool previous_rotate) {
     if (previous_rotate && !rotate_camera)

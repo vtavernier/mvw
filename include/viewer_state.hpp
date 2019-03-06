@@ -23,9 +23,7 @@ struct viewer_state {
     glm::vec3 center;
     float scale;
 
-    std::shared_ptr<spd::logger> log;
-
-    viewer_state(std::shared_ptr<spd::logger> log);
+    viewer_state();
 
     void update_rotation(bool previous_rotate);
 

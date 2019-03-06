@@ -28,18 +28,18 @@ class server_impl {
    public:
     zmq::context_t context;
     zmq::socket_t socket;
-    std::shared_ptr<spd::logger> logger;
+    std::shared_ptr<spdlog::logger> logger;
     bool getframe_pending;
 
-    server_impl(const std::string &bind_addr)
+    server_impl(const server_options &opt)
         : context(),
           socket(context, ZMQ_REP),
-          logger(spd::stderr_color_st("server")),
+          logger(spdlog::stderr_color_st("server")),
           getframe_pending(false) {
-        logger->set_level(spd::level::info);
+        logger->set_level(spdlog::level::info);
 
-        logger->info("Binding to {}", bind_addr);
-        socket.bind(bind_addr.c_str());
+        logger->info("Binding to {}", opt.bind_addr);
+        socket.bind(opt.bind_addr);
     }
 
     template <typename T>
@@ -174,8 +174,8 @@ void server::handle_setparam(gl_state &gl_state, int revision,
     }
 }
 
-server::server(const std::string &bind_addr)
-    : impl_{std::make_unique<server_impl>(bind_addr)} {}
+server::server(const server_options &opt)
+    : opt_(opt), impl_{std::make_unique<server_impl>(opt)} {}
 
 server::~server() {}
 

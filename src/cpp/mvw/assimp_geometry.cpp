@@ -1,23 +1,24 @@
 #include <epoxy/gl.h>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
 
 #include "mvw/assimp_geometry.hpp"
 
-assimp_geometry::assimp_geometry(const std::string &geometry_path)
-    : mvw_geometry()
-{
+assimp_geometry::assimp_geometry(const std::string &geometry,
+                                 bool is_nff_source)
+    : mvw_geometry() {
     Assimp::Importer importer;
 
-    const aiScene * scene = importer.ReadFile(geometry_path,
-                                              aiProcess_Triangulate |
-                                              aiProcess_JoinIdenticalVertices |
-                                              aiProcess_GenSmoothNormals |
-                                              aiProcess_ImproveCacheLocality |
-                                              aiProcess_SortByPType |
-                                              aiProcess_PreTransformVertices);
+    auto flags = aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
+                 aiProcess_GenSmoothNormals | aiProcess_ImproveCacheLocality |
+                 aiProcess_SortByPType | aiProcess_PreTransformVertices;
+
+    const aiScene *scene =
+        is_nff_source ? importer.ReadFileFromMemory(
+                            geometry.c_str(), geometry.size(), flags, "nff")
+                      : importer.ReadFile(geometry, flags);
 
     if (!scene) {
         throw std::runtime_error(importer.GetErrorString());
@@ -27,14 +28,13 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
         throw std::runtime_error("No meshes found in imported file");
     }
 
-    glm::vec3 d_min(0., 0., 0.),
-        d_max(0., 0., 0.);
+    glm::vec3 d_min(0., 0., 0.), d_max(0., 0., 0.);
     glm::dvec3 d_centroid(0., 0., 0.);
     size_t centroid_count = 0;
 
     // Just get the first mesh
     for (size_t mi = 0; mi < scene->mNumMeshes; ++mi) {
-        aiMesh * mesh = scene->mMeshes[mi];
+        aiMesh *mesh = scene->mMeshes[mi];
 
         std::vector<vertex_data> vertices;
         std::vector<uint32_t> indices;
@@ -43,8 +43,7 @@ assimp_geometry::assimp_geometry(const std::string &geometry_path)
         indices.reserve(mesh->mNumFaces * 3);
 
         for (size_t i = 0; i < mesh->mNumVertices; ++i) {
-            glm::vec3 p(mesh->mVertices[i].x,
-                        mesh->mVertices[i].y,
+            glm::vec3 p(mesh->mVertices[i].x, mesh->mVertices[i].y,
                         mesh->mVertices[i].z);
 
             // Compute bounding box

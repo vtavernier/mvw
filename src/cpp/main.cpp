@@ -28,27 +28,30 @@ int main(int argc, char *argv[]) {
     int code = 0;
 
     // Initialize logger
-    auto log = spd::stderr_color_st("viewer");
+    spdlog::stderr_color_st(VLOG_NAME);
 
-    std::string geometry_path;
-    std::string shader_path;
-    std::string postprocess_path;
-    int width, height = 1024;
-    bool use_make;
-    std::string bind_addr;
-    bool debug;
+    viewer_options opt;
 
     // clang-format off
     po::options_description v_desc("Viewer options");
     v_desc.add_options()
-        ("geometry,g", po::value(&geometry_path)->default_value("../models/mcguire/bunny/bunny.obj"), "Path to the geometry to load")
-        ("shader,s", po::value(&shader_path)->default_value("glsl/gabor-noise-surface.glsl"), "Path to the shader program to use")
-        ("postprocess,p", po::value(&postprocess_path)->default_value(""), "Path to the postprocessing shader to use")
-        ("width,W", po::value(&width)->default_value(height + window_width), "Window width")
-        ("height,H", po::value(&height)->default_value(height), "Window height")
-        ("use-make,m", po::bool_switch(&use_make), "Compile the target shader file using make first")
-        ("bind,b", po::value(&bind_addr)->default_value(default_bind_addr()), "Server bind address")
-        ("debug,d", po::bool_switch(&debug)->default_value(false), "Enable debug logs")
+        /* program options */
+        ("shader-file,s", po::value(&opt.program.shader.path), "Path to the shader program")
+        ("shader,S", po::value(&opt.program.shader.source), "Source of the shader program")
+        ("postprocess-file,p", po::value(&opt.program.postprocess.path), "Path to the postprocessing shader")
+        ("postprocess,P", po::value(&opt.program.postprocess.source), "Source of the postprocessing shader")
+        ("use-make,m", po::bool_switch(&opt.program.use_make), "Compile the target shader file using make first")
+        /* geometry */
+        ("geometry-file,g", po::value(&opt.geometry.path), "Path to the geometry to load")
+        ("geometry,G", po::value(&opt.geometry.nff_source), "NFF format string of the geometry to use")
+        /* frame options */
+        ("width,W", po::value(&opt.frame.width)->default_value(512), "Frame width")
+        ("height,H", po::value(&opt.frame.height)->default_value(512), "Frame height")
+        /* server options */
+        ("bind,b", po::value(&opt.server.bind_addr)->default_value(default_bind_addr()), "Server bind address")
+        /* log options */
+        ("debug,d", po::bool_switch(&opt.log.debug)->default_value(false), "Enable debug logs")
+        /*  misc */
         ("help,h", "Show this help message");
     // clang-format on
 
@@ -76,34 +79,27 @@ int main(int argc, char *argv[]) {
     }
 
     if (!glfwInit()) {
-        log->critical("Failed to initialize glfw");
+        VLOG->critical("Failed to initialize glfw");
         return 2;
     }
 
     // Set log levels
-    auto level = debug ? spd::level::debug : spd::level::info;
+    auto level = opt.log.debug ? spdlog::level::debug : spdlog::level::info;
     utils::log::shadertoy()->set_level(level);
-    log->set_level(level);
+    VLOG->set_level(level);
 
     // Initialize window
     try {
-        viewer_window window(log,
-                             width,
-                             height,
-                             geometry_path,
-                             shader_path,
-                             postprocess_path,
-                             use_make,
-                             bind_addr);
+        viewer_window window(std::move(opt));
         window.run();
     } catch (gl::shader_compilation_error &sce) {
-        log->critical("Failed to compile shader: {}", sce.log());
+        VLOG->critical("Failed to compile shader: {}", sce.log());
         code = 2;
     } catch (shadertoy_error &err) {
-        log->critical("GL error: {}", err.what());
+        VLOG->critical("GL error: {}", err.what());
         code = 2;
     } catch (std::runtime_error &ex) {
-        log->critical("Generic error: {}", ex.what());
+        VLOG->critical("Generic error: {}", ex.what());
         code = 1;
     }
 

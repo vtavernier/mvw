@@ -2,6 +2,8 @@
 #define _LOG_HPP_
 
 #include <shadertoy/utils/log.hpp>
-namespace spd = spdlog;
+
+#define VLOG_NAME "viewer"
+#define VLOG (spdlog::get(VLOG_NAME))
 
 #endif /* _LOG_HPP_ */

@@ -6,6 +6,8 @@
 
 #include "imgui.h"
 
+#include "log.hpp"
+
 #include "discovered_uniform.hpp"
 
 using std::regex;
@@ -298,8 +300,7 @@ discovered_uniform discovered_uniform::parse_spec(
 }
 
 void try_parse_uniform(const std::string &line,
-                       std::vector<discovered_uniform> &discovered_uniforms,
-                       std::shared_ptr<spdlog::logger> log) {
+                       std::vector<discovered_uniform> &discovered_uniforms) {
     std::smatch match;
     if (regex_search(line, match, regex_vardecl) && match.size() > 1) {
         auto type = match.str(1);
@@ -317,8 +318,8 @@ void try_parse_uniform(const std::string &line,
         regex_search(spec, match_unm, regex_varunm);
         regex_search(spec, match_ang, regex_varang);
 
-        log->info("Parsed uniform declaration for {} \"{}\" (type {})", name,
-                  match_unm.size() > 1 ? match_unm.str(1) : "", type);
+        VLOG->info("Parsed uniform declaration for {} \"{}\" (type {})", name,
+                   match_unm.size() > 1 ? match_unm.str(1) : "", type);
 
         discovered_uniforms.emplace_back(discovered_uniform::parse_spec(
             match_min.size() > 1 ? match_min.str(1) : "0",

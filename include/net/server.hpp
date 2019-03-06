@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "options.hpp"
+
 class gl_state;
 
 #define CMD_NAME_GETFRAME "getframe"
@@ -14,6 +16,7 @@ namespace net {
 class server_impl;
 
 class server {
+    const server_options &opt_;
     std::unique_ptr<server_impl> impl_;
 
     void handle_getframe(gl_state &gl_state, int revision) const;
@@ -25,7 +28,7 @@ class server {
     void handle_setparam(gl_state &gl_state, int revision, bool &changed_state) const;
 
    public:
-    server(const std::string &bind_addr);
+    server(const server_options &opt);
     // non-trivial destructor because of pimpl
     ~server();
 

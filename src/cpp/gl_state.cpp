@@ -5,18 +5,26 @@
 #include <fstream>
 #include <regex>
 
+#include <glm/gtx/string_cast.hpp>
+
+#ifndef _WIN32
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
 #include "imgui.h"
 
 #include "config.hpp"
 #include "gl_state.hpp"
 
+#include "options.hpp"
+
 using namespace shadertoy;
 using shadertoy::gl::gl_call;
 
-gl_state::gl_state(std::shared_ptr<spd::logger> log, int width, int height,
-                   const std::string &geometry_path)
-    : log(log),
-      g_buffer_template_(std::make_shared<compiler::program_template>()) {
+gl_state::gl_state(const frame_options &opt)
+    : g_buffer_template_(std::make_shared<compiler::program_template>()) {
     // Register the custom inputs with the buffer template
     context.buffer_template().shader_inputs().emplace("geometry",
                                                       &extra_inputs);
@@ -50,30 +58,25 @@ gl_state::gl_state(std::shared_ptr<spd::logger> log, int width, int height,
     g_buffer_template_->compile(GL_VERTEX_SHADER);
 
     // Set the context parameters (render size and some uniforms)
-    render_size = rsize(width - window_width, height);
+    render_size = rsize(opt.width, opt.height);
     context.state().get<iTimeDelta>() = 1.0 / 60.0;
     context.state().get<iFrameRate>() = 60.0;
-
-    // Load geometry
-    log->info("Loading model {}", geometry_path);
-    geometry = make_geometry(geometry_path);
 }
 
 gl_state::chain_instance::chain_instance(
-    std::shared_ptr<spd::logger> log,
     std::shared_ptr<compiler::program_template> g_buffer_template,
-    const std::string &shader_path, const std::string &postprocess_path,
-    shadertoy::render_context &context, rsize &render_size,
-    std::shared_ptr<mvw_geometry> geometry) {
-    bool has_postprocess = !postprocess_path.empty();
+    const shader_program_options &opt, shadertoy::render_context &context,
+    rsize &render_size)
+    : opt(opt) {
+    bool has_postprocess = !opt.postprocess.empty();
 
     // There is some shared state in the template here, but it's the simplest
     g_buffer_template->shader_inputs()["parsed"] = &parsed_inputs;
     context.buffer_template().shader_inputs()["parsed"] = &parsed_inputs;
 
     // Parse uniforms from source
-    parse_uniforms(shader_path, log);
-    if (has_postprocess) parse_uniforms(postprocess_path, log);
+    parse_uniforms(opt.shader);
+    parse_uniforms(opt.postprocess);
 
     // Apply the defaults to define the uniforms before the template is
     // generated
@@ -85,7 +88,12 @@ gl_state::chain_instance::chain_instance(
     geometry_buffer = std::make_shared<mvw_buffer>("geometry");
     geometry_buffer->override_program(g_buffer_template);
 
-    geometry_buffer->source_file(shader_path);
+    opt.shader.invoke(
+        [this](const auto &path) {
+            if (this->opt.use_make) compile_shader_source(path);
+            geometry_buffer->source_file(path);
+        },
+        [this](const auto &source) { geometry_buffer->source(source); });
 
     // Add the geometry buffer to the swap chain, at the given size
     auto geometry_target =
@@ -124,7 +132,13 @@ gl_state::chain_instance::chain_instance(
         // Add the postprocess buffer
         postprocess_buffer =
             std::make_shared<buffers::toy_buffer>("postprocess");
-        postprocess_buffer->source_file(postprocess_path);
+
+        opt.postprocess.invoke(
+            [this](const auto &path) {
+                if (this->opt.use_make) compile_shader_source(path);
+                postprocess_buffer->source_file(path);
+            },
+            [this](const auto &source) { postprocess_buffer->source(source); });
 
         // The postprocess pass has the output of the geometry pass as input 0
         auto postprocess_input(
@@ -137,7 +151,8 @@ gl_state::chain_instance::chain_instance(
                            member_swap_policy::single_buffer);
     }
 
-    auto screen_member = members::make_screen(window_width, 0, make_size_ref(render_size));
+    auto screen_member =
+        members::make_screen(window_width, 0, make_size_ref(render_size));
     chain.push_back(screen_member);
 
     // Clear the background before rendering on screen
@@ -156,26 +171,54 @@ gl_state::chain_instance::chain_instance(
 
     // Initialize context
     context.init(chain);
-    log->info("Initialized main swap chain");
+    VLOG->info("Initialized main swap chain");
 
     context.init(geometry_chain);
-    log->info("Initialized geometry-only swap chain");
-
-    // Set the geometry reference
-    geometry_buffer->geometry(geometry);
+    VLOG->info("Initialized geometry-only swap chain");
 }
 
-void gl_state::load_chain(const std::string &shader_path,
-                          const std::string &postprocess_path) {
+void gl_state::load_chain(const shader_program_options &opt) {
     chains.emplace_back(std::make_unique<chain_instance>(
-        log, g_buffer_template_, shader_path, postprocess_path, context,
-        render_size, geometry));
+        g_buffer_template_, opt, context, render_size));
+}
+
+void gl_state::load_geometry(const geometry_options &geometry) {
+    // Load geometry
+    geometry_ = make_geometry(geometry);
+
+    if (geometry_) {
+        // Compute model scale, update state
+        //  Fetch dimensions of model
+        glm::vec3 bbox_min, bbox_max;
+        geometry_->get_dimensions(bbox_min, bbox_max);
+        glm::dvec3 centroid = geometry_->get_centroid();
+
+        glm::vec3 dimensions = bbox_max - bbox_min;
+        center = (bbox_max + bbox_min) / 2.f;
+        scale = 1. / dimensions.z;
+        VLOG->info("Object dimensions: {}", glm::to_string(dimensions));
+        VLOG->info("Object center: {}", glm::to_string(center));
+        VLOG->info("Object centroid: {}", glm::to_string(centroid));
+
+        //  Set state_
+        extra_inputs.get<bboxMax>() = bbox_max;
+        extra_inputs.get<bboxMin>() = bbox_min;
+    }
 }
 
 void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       geometry_inputs_t &extra_inputs,
                                       bool draw_wireframe, bool draw_quad,
-                                      const shadertoy::rsize &render_size) {
+                                      const shadertoy::rsize &render_size,
+                                      std::shared_ptr<mvw_geometry> geometry) {
+    // Set the geometry reference
+    geometry_buffer->geometry(geometry);
+
+    if (!geometry) {
+        VLOG->warn("No geometry to render");
+        return;
+    }
+
     // Update quad rendering status
     geometry_buffer->render_quad(draw_quad);
     extra_inputs.get<dQuad>() = draw_quad ? 1 : 0;
@@ -202,19 +245,51 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
     }
 }
 
-void gl_state::chain_instance::parse_uniforms(
-    const std::string &path, std::shared_ptr<spd::logger> log) {
+void gl_state::chain_instance::parse_uniforms(const shader_file_program &sfp) {
+    if (sfp.empty()) return;
+
     std::string line;
-    std::ifstream ifs(path);
-    while (!ifs.eof()) {
-        std::getline(ifs, line);
-        try_parse_uniform(line, discovered_uniforms, log);
+    auto ifs(sfp.open());
+    while (!ifs->eof()) {
+        std::getline(*ifs, line);
+        try_parse_uniform(line, discovered_uniforms);
+    }
+}
+
+void gl_state::chain_instance::compile_shader_source(
+    const std::string &shader_path) {
+    if (shader_path.empty()) return;
+
+    VLOG->info("Compiling {} using make", shader_path);
+
+    int pid = fork();
+
+    if (pid == 0) {
+        size_t begin;
+        if ((begin = shader_path.find_last_of('/')) != std::string::npos) {
+            begin++;
+        } else {
+            begin = 0;
+        }
+
+        std::string basename(shader_path.begin() + begin, shader_path.end());
+        const char *args[] = {"make", basename.c_str(), NULL};
+
+        execvp("make", const_cast<char *const *>(args));
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+            throw std::runtime_error("Failed to compile shader source code");
+        }
     }
 }
 
 void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision) {
     chains.at(chains.size() + back_revision - 1)
-        ->render(context, extra_inputs, draw_wireframe, draw_quad, render_size);
+        ->render(context, extra_inputs, draw_wireframe, draw_quad, render_size,
+                 geometry_);
 }
 
 void gl_state::render_imgui(int back_revision) {
@@ -232,7 +307,8 @@ void gl_state::render_imgui(int back_revision) {
         }
     }
 
-    for (auto it = uniform_categories.begin(); it != uniform_categories.end(); ++it) {
+    for (auto it = uniform_categories.begin(); it != uniform_categories.end();
+         ++it) {
         ImGui::Text("%s", it->first.c_str());
 
         for (auto &uniform : it->second) {
@@ -260,18 +336,25 @@ const gl::texture &gl_state::get_render_result(int back_revision) {
     auto member(std::static_pointer_cast<members::buffer_member>(
         *++chain->chain.members().rbegin()));
 
-    log->info("Fetching frame({}) rev {}", member->buffer()->id(),
-              back_revision);
+    VLOG->info("Fetching frame({}) rev {}", member->buffer()->id(),
+               back_revision);
 
     return *member->output();
 }
 
-const std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(int back_revision) const {
+const std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(
+    int back_revision) const {
     return chains.at(chains.size() + back_revision - 1)->discovered_uniforms;
 }
 
-std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(int back_revision) {
+std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(
+    int back_revision) {
     return chains.at(chains.size() + back_revision - 1)->discovered_uniforms;
+}
+
+bool gl_state::has_postprocess(int back_revision) const {
+    return !chains.at(chains.size() + back_revision - 1)
+                ->opt.postprocess.empty();
 }
 
 void gl_state::allocate_textures() {
