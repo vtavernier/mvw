@@ -10,6 +10,14 @@ struct RemoteMvw <: AbstractMvw
     connection::RPC.Connection
 end
 
+# A connection to a spawned instance
+mutable struct SpawnedMvw <: AbstractMvw
+    connection::RPC.Connection
+    bind_addr::AbstractString
+    spawn_command::Cmd
+    process::Base.Process
+end
+
 # Default bind address for a remote instance of mvw
 function default_bind_addr()
     @static if Sys.iswindows()
@@ -20,15 +28,59 @@ function default_bind_addr()
     end
 end
 
+import Random
+
+function random_bind_addr()
+    @static if Sys.iswindows()
+        return "tcp://127.0.0.1:" * string(Random.rand(32768:65535))
+    else
+        tmpdir = haskey(ENV, "TMPDIR") ? ENV["TMPDIR"] : "/tmp"
+        return "ipc://$tmpdir/" * Random.randstring(16)
+    end
+end
+
 # Connect to a remote instance of mvw
 function connect(target::AbstractString = default_bind_addr())
     RemoteMvw(RPC.connect(target))
 end
 
-getframe(mvw::RemoteMvw, args...; kwargs...) = RPC.getframe(mvw.connection, args...; kwargs...)
-getparams(mvw::RemoteMvw, args...; kwargs...) = RPC.getparams(mvw.connection, args...; kwargs...)
-getparam(mvw::RemoteMvw, args...; kwargs...) = RPC.getparam(mvw.connection, args...; kwargs...)
-setparam(mvw::RemoteMvw, args...; kwargs...) = RPC.setparam(mvw.connection, args...; kwargs...)
+# Spawn a viewer for the given geometry, shader source and postprocess source
+function spawn(command)
+    bind_addr = random_bind_addr()
+    spawned_command = vcat(command, ["--bind", bind_addr])
+    spawned_command = `$spawned_command`
+    process = open(spawned_command)
 
-export connect, getframe, getparams, getparam, setparam
+    spawned = SpawnedMvw(RPC.connect(bind_addr), bind_addr, spawned_command, process)
+    finalizer(s -> kill(s.process), spawned)
+    spawned
+end
+
+function spawn(fn, command)
+    spawned = spawn(command)
+    try
+        fn(spawned)
+    finally
+        finalize(spawned)
+    end
+end
+
+# Ensure the connection is ok on an abstract viewer instance
+function connok(mvw::RemoteMvw)
+    # nothing to do here, we only assume it's working
+    mvw.connection
+end
+
+# Ensure the connection is ok on an abstract viewer instance
+function connok(mvw::SpawnedMvw)
+    # nothing to do here, we only assume it's working
+    mvw.connection
+end
+
+getframe(mvw::AbstractMvw, args...; kwargs...) = RPC.getframe(connok(mvw), args...; kwargs...)
+getparams(mvw::AbstractMvw, args...; kwargs...) = RPC.getparams(connok(mvw), args...; kwargs...)
+getparam(mvw::AbstractMvw, args...; kwargs...) = RPC.getparam(connok(mvw), args...; kwargs...)
+setparam(mvw::AbstractMvw, args...; kwargs...) = RPC.setparam(connok(mvw), args...; kwargs...)
+
+export connect, spawn, getframe, getparams, getparam, setparam
 end # module
