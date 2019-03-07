@@ -178,8 +178,23 @@ gl_state::chain_instance::chain_instance(
 }
 
 void gl_state::load_chain(const shader_program_options &opt) {
+    bool migrate_uniforms = !chains.empty();
+
     chains.emplace_back(std::make_unique<chain_instance>(
         g_buffer_template_, opt, context, render_size));
+
+    if (migrate_uniforms) {
+        auto &chain_now = chains.back();
+        auto &chain_before = *++chains.rbegin();
+
+        for (auto &uniform : chain_before->discovered_uniforms) {
+            for (auto &new_uniform : chain_now->discovered_uniforms) {
+                if (uniform.s_name == new_uniform.s_name) {
+                    try_set_variant(new_uniform.value, uniform.value);
+                }
+            }
+        }
+    }
 }
 
 void gl_state::load_geometry(const geometry_options &geometry) {
