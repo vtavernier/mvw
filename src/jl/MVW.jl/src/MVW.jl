@@ -45,15 +45,17 @@ function connect(target::AbstractString = default_bind_addr())
 end
 
 # Spawn a viewer for the given geometry, shader source and postprocess source
-function spawn(command)
-    bind_addr = random_bind_addr()
-    spawned_command = vcat(command, ["--bind", bind_addr])
-    spawned_command = `$spawned_command`
-    process = open(spawned_command)
+function spawn(base::AbstractString, command)
+    cd(base) do
+        bind_addr = random_bind_addr()
+        spawned_command = vcat(["./viewer"], command, ["--bind", bind_addr])
+        spawned_command = `$spawned_command`
+        process = open(spawned_command)
 
-    spawned = SpawnedMvw(RPC.connect(bind_addr), bind_addr, spawned_command, process)
-    finalizer(s -> kill(s.process), spawned)
-    spawned
+        spawned = SpawnedMvw(RPC.connect(bind_addr), bind_addr, spawned_command, process)
+        finalizer(s -> kill(s.process), spawned)
+        spawned
+    end
 end
 
 function spawn(fn, command)
