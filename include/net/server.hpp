@@ -19,7 +19,7 @@ class server {
     const server_options &opt_;
     std::unique_ptr<server_impl> impl_;
 
-    void handle_getframe(gl_state &gl_state, int revision) const;
+    void handle_getframe(gl_state &gl_state, int revision, const std::string &target) const;
 
     void handle_getparams(gl_state &gl_state, int revision) const;
 

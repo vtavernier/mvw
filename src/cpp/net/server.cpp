@@ -15,7 +15,7 @@ using namespace net;
 namespace net {
 typedef msgpack::type::tuple<bool, std::string> default_reply;
 typedef msgpack::type::tuple<bool, std::map<std::string, int>> getframe_reply;
-typedef shadertoy::rsize getframe_args;
+typedef msgpack::type::tuple<std::string, shadertoy::rsize> getframe_args;
 typedef msgpack::type::tuple<bool, std::vector<discovered_uniform>>
     getparams_reply;
 typedef std::string getparam_args;
@@ -78,15 +78,26 @@ class server_impl {
 };
 }  // namespace net
 
-void server::handle_getframe(gl_state &gl_state, int revision) const {
-    // Get rendered-to texture
-    auto &texture = gl_state.get_render_result(revision);
+void server::handle_getframe(gl_state &gl_state, int revision, const std::string &target) const {
+    const shadertoy::gl::texture *texture;
+
+    try
+    {
+        // Get rendered-to texture
+        texture = &gl_state.get_render_result(revision, target);
+    }
+    catch (std::runtime_error &ex)
+    {
+        net::default_reply result(false, ex.what());
+        impl_->send(result);
+        return;
+    }
 
     // Get texture parameters and format
     GLint width, height, internal_format;
-    texture.get_parameter(0, GL_TEXTURE_WIDTH, &width);
-    texture.get_parameter(0, GL_TEXTURE_HEIGHT, &height);
-    texture.get_parameter(0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+    texture->get_parameter(0, GL_TEXTURE_WIDTH, &width);
+    texture->get_parameter(0, GL_TEXTURE_HEIGHT, &height);
+    texture->get_parameter(0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
 
     // Status message
     net::getframe_reply result(true, std::map<std::string, int>{});
@@ -108,7 +119,7 @@ void server::handle_getframe(gl_state &gl_state, int revision) const {
     size_t sz = width * height * bytes_per_pixel;
     zmq::message_t data_msg(sz);
     // Read the image into the message buffer directly
-    texture.get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
+    texture->get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
     impl_->socket.send(data_msg);
 }
 
@@ -195,7 +206,7 @@ void server::poll(gl_state &gl_state, int revision) const {
         // Note that it is unlikely the rendering size changed between two
         // requests So we don't check again that gl_state.render_size matches
         // getframe_pending args
-        handle_getframe(gl_state, revision);
+        handle_getframe(gl_state, revision, impl_->getframe_pending->get<0>());
 
         // Acknowledge getframe
         impl_->getframe_pending.reset();
@@ -216,9 +227,9 @@ void server::poll(gl_state &gl_state, int revision) const {
             if (cmdname.compare(CMD_NAME_GETFRAME) == 0) {
                 auto args = impl_->recv<getframe_args>();
 
-                if (args != gl_state.render_size) {
+                if (args.get<1>() != gl_state.render_size) {
                     // We are not rendering at the right size
-                    gl_state.render_size = args;
+                    gl_state.render_size = args.get<1>();
                     gl_state.allocate_textures();
 
                     // The current frame is thus invalid w.r.t the requested size
@@ -231,7 +242,7 @@ void server::poll(gl_state &gl_state, int revision) const {
                     impl_->getframe_pending = args;
                     next_frame = true;
                 } else {
-                    handle_getframe(gl_state, revision);
+                    handle_getframe(gl_state, revision, args.get<0>());
                 }
             } else if (cmdname.compare(CMD_NAME_GETPARAMS) == 0) {
                 handle_getparams(gl_state, revision);

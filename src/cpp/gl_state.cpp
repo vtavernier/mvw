@@ -331,10 +331,31 @@ void gl_state::get_render_ms(float times[2], int back_revision) {
         times[1] = 0.0f;
 }
 
-const gl::texture &gl_state::get_render_result(int back_revision) {
+const gl::texture &gl_state::get_render_result(int back_revision, const std::string &target) {
     auto &chain(chains.at(chains.size() + back_revision - 1));
-    auto member(std::static_pointer_cast<members::buffer_member>(
-        *++chain->chain.members().rbegin()));
+    std::shared_ptr<members::buffer_member> member;
+
+    if (target.empty()) {
+        member = std::static_pointer_cast<members::buffer_member>(
+            *++chain->chain.members().rbegin());
+    } else {
+        auto it = std::find_if(
+            chain->chain.members().begin(), chain->chain.members().end(),
+            [&target](const auto &member) {
+                if (auto buffer_member =
+                        std::dynamic_pointer_cast<members::buffer_member>(
+                            member)) {
+                    return buffer_member->buffer()->id() == target;
+                }
+
+                return false;
+            });
+
+        if (it == chain->chain.members().end())
+            throw std::runtime_error(target + " member not found");
+
+        member = std::static_pointer_cast<members::buffer_member>(*it);
+    }
 
     VLOG->info("Fetching frame({}) rev {}", member->buffer()->id(),
                back_revision);
