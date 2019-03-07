@@ -84,5 +84,5 @@ getparams(mvw::AbstractMvw, args...; kwargs...) = RPC.getparams(connok(mvw), arg
 getparam(mvw::AbstractMvw, args...; kwargs...) = RPC.getparam(connok(mvw), args...; kwargs...)
 setparam(mvw::AbstractMvw, args...; kwargs...) = RPC.setparam(connok(mvw), args...; kwargs...)
 
-export connect, spawn, getframe, getparams, getparam, setparam
+export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam
 end # module
