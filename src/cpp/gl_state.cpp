@@ -210,7 +210,7 @@ void gl_state::load_geometry(const geometry_options &geometry) {
 
         glm::vec3 dimensions = bbox_max - bbox_min;
         center = (bbox_max + bbox_min) / 2.f;
-        scale = 1. / dimensions.z;
+        scale = 2. / dimensions.z;
         VLOG->info("Object dimensions: {}", glm::to_string(dimensions));
         VLOG->info("Object center: {}", glm::to_string(center));
         VLOG->info("Object centroid: {}", glm::to_string(centroid));
