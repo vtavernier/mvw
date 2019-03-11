@@ -95,6 +95,10 @@ int main(int argc, char *argv[]) {
     } catch (gl::shader_compilation_error &sce) {
         VLOG->critical("Failed to compile shader: {}", sce.log());
         code = 2;
+    } catch (gl::program_link_error &sce) {
+        VLOG->critical("Failed to link program: {}", sce.log());
+
+        code = 2;
     } catch (shadertoy_error &err) {
         VLOG->critical("GL error: {}", err.what());
         code = 2;
