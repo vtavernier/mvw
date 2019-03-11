@@ -21,10 +21,15 @@ using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
 void viewer_window::reload_shader() {
-    // Reinitialize chain
-    gl_state_->load_chain(opt_.program);
-
-    VLOG->info("Reloaded swap-chain");
+    try {
+        // Reinitialize chain
+        gl_state_->load_chain(opt_.program);
+        VLOG->info("Reloaded swap-chain");
+    } catch (shadertoy::gl::shader_compilation_error &ex) {
+        VLOG->error("Failed to compile shader: {}", ex.log());
+    } catch (shadertoy::gl::program_link_error &ex) {
+        VLOG->error("Failed to link program: {}", ex.log());
+    }
 }
 
 viewer_window::viewer_window(viewer_options &&opt)
