@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
         ("bind,b", po::value(&opt.server.bind_addr)->default_value(default_bind_addr()), "Server bind address")
         /* log options */
         ("debug,d", po::bool_switch(&opt.log.debug)->default_value(false), "Enable debug logs")
+        ("verbose,v", po::bool_switch(&opt.log.verbose)->default_value(false), "Enable verbose logs")
         /*  misc */
         ("help,h", "Show this help message");
     // clang-format on
@@ -84,7 +85,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Set log levels
-    auto level = opt.log.debug ? spdlog::level::debug : spdlog::level::info;
+    auto level = opt.log.debug ? spdlog::level::debug :
+        (opt.log.verbose ? spdlog::level::info : spdlog::level::warn);
     utils::log::shadertoy()->set_level(level);
     VLOG->set_level(level);
 
