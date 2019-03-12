@@ -25,7 +25,7 @@ find_package(Epoxy REQUIRED)
 find_package(Glfw3 REQUIRED)
 
 # Boost
-find_package(Boost 1.58 REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost 1.58 REQUIRED COMPONENTS program_options)
 
 # Remoting using ZMQ
 find_package(ZeroMQ REQUIRED)

@@ -79,12 +79,12 @@ class server_impl {
 }  // namespace net
 
 void server::handle_getframe(gl_state &gl_state, int revision, const std::string &target) const {
-    const shadertoy::gl::texture *texture;
+    std::vector<shadertoy::members::member_output_t> output;
 
     try
     {
         // Get rendered-to texture
-        texture = &gl_state.get_render_result(revision, target);
+        output = gl_state.get_render_result(revision, target);
     }
     catch (std::runtime_error &ex)
     {
@@ -92,6 +92,10 @@ void server::handle_getframe(gl_state &gl_state, int revision, const std::string
         impl_->send(result);
         return;
     }
+
+    auto texture(std::get<1>(*std::find_if(
+        output.begin(), output.end(),
+        [](const auto &out) { return std::get<1>(std::get<0>(out)) == 0; })));
 
     // Get texture parameters and format
     GLint width, height, internal_format;

@@ -1,7 +1,7 @@
 #ifndef _DISCOVERED_UNIFORM_HPP_
 #define _DISCOVERED_UNIFORM_HPP_
 
-#include <boost/variant.hpp>
+#include <variant>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -11,9 +11,9 @@
 
 #include "uniforms.hpp"
 
-typedef boost::variant<float, glm::vec2, glm::vec3, glm::vec4, int, glm::ivec2,
-                       glm::ivec3, glm::ivec4, bool, glm::bvec2, glm::bvec3,
-                       glm::bvec4>
+typedef std::variant<float, glm::vec2, glm::vec3, glm::vec4, int, glm::ivec2,
+                     glm::ivec3, glm::ivec4, bool, glm::bvec2, glm::bvec3,
+                     glm::bvec4>
     uniform_variant;
 
 #include "detail/discovered_uniform.hpp"

@@ -5,8 +5,6 @@
 #include <memory>
 #include <string>
 
-#include <boost/variant.hpp>
-
 struct shader_file_program {
     std::string path;
     std::string source;
@@ -57,6 +55,7 @@ struct server_options {
 
 struct log_options {
     bool debug;
+    bool verbose;
 };
 
 struct viewer_options {

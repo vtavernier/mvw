@@ -77,7 +77,7 @@ struct gl_state {
 
     void get_render_ms(float times[2], int back_revision = 0);
 
-    const shadertoy::gl::texture &get_render_result(int back_revision = 0, const std::string &target = "");
+    std::vector<shadertoy::members::member_output_t> get_render_result(int back_revision = 0, const std::string &target = "") const;
 
     const std::vector<discovered_uniform> &get_discovered_uniforms(
         int back_revision = 0) const;

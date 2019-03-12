@@ -142,9 +142,13 @@ gl_state::chain_instance::chain_instance(
 
         // The postprocess pass has the output of the geometry pass as input 0
         auto postprocess_input(
-            std::make_shared<shadertoy::inputs::buffer_input>(geometry_target));
+            std::make_shared<shadertoy::inputs::buffer_input>(geometry_target, 0));
         postprocess_input->min_filter(GL_LINEAR_MIPMAP_LINEAR);
         postprocess_buffer->inputs().emplace_back(postprocess_input);
+
+        auto lighting_input(
+            std::make_shared<shadertoy::inputs::buffer_input>(geometry_target, 1));
+        postprocess_buffer->inputs().emplace_back(lighting_input);
 
         // Add postprocess pass to the chain
         chain.emplace_back(postprocess_buffer, make_size_ref(render_size),
@@ -346,7 +350,7 @@ void gl_state::get_render_ms(float times[2], int back_revision) {
         times[1] = 0.0f;
 }
 
-const gl::texture &gl_state::get_render_result(int back_revision, const std::string &target) {
+std::vector<shadertoy::members::member_output_t> gl_state::get_render_result(int back_revision, const std::string &target) const {
     auto &chain(chains.at(chains.size() + back_revision - 1));
     std::shared_ptr<members::buffer_member> member;
 
@@ -375,7 +379,7 @@ const gl::texture &gl_state::get_render_result(int back_revision, const std::str
     VLOG->info("Fetching frame({}) rev {}", member->buffer()->id(),
                back_revision);
 
-    return *member->output();
+    return member->output();
 }
 
 const std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(

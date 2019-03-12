@@ -64,7 +64,7 @@ uniform_variant parse_variantN(const std::string &l) {
     return uniform_variant{value};
 }
 
-class uniform_setter_visitor : public boost::static_visitor<void> {
+class uniform_setter_visitor {
     const std::string &name_;
     parsed_inputs_t &inputs_;
 
@@ -78,7 +78,7 @@ class uniform_setter_visitor : public boost::static_visitor<void> {
         : name_(name), inputs_(inputs) {}
 };
 
-class uniform_create_visitor : public boost::static_visitor<void> {
+class uniform_create_visitor {
     const std::string &name_;
     parsed_inputs_t &inputs_;
 
@@ -194,15 +194,15 @@ DISPATCH_TARGET(glm::vec4, vec4_value, float);
 DISPATCH_TARGET(glm::ivec4, vec4_value, int);
 DISPATCH_TARGET(glm::bvec4, vec4_value, bool);
 
-class imgui_render_visitor : public boost::static_visitor<void> {
+class imgui_render_visitor {
     discovered_uniform &uniform_;
 
    public:
     template <typename T>
     void operator()(T &value) const {
         typename vec_dispatch<T>::target_type{}(
-            boost::get<T>(uniform_.s_min), boost::get<T>(uniform_.s_max), value,
-            boost::get<T>(uniform_.s_pow), uniform_.s_username, uniform_.s_fmt,
+            std::get<T>(uniform_.s_min), std::get<T>(uniform_.s_max), value,
+            std::get<T>(uniform_.s_pow), uniform_.s_username, uniform_.s_fmt,
             uniform_.s_angle);
     }
 
@@ -225,15 +225,15 @@ discovered_uniform::discovered_uniform(
       s_angle(s_angle) {}
 
 void discovered_uniform::set_uniform(parsed_inputs_t &inputs) {
-    boost::apply_visitor(uniform_setter_visitor{s_name, inputs}, value);
+    std::visit(uniform_setter_visitor{s_name, inputs}, value);
 }
 
 void discovered_uniform::create_uniform(parsed_inputs_t &inputs) {
-    boost::apply_visitor(uniform_create_visitor{s_name, inputs}, value);
+    std::visit(uniform_create_visitor{s_name, inputs}, value);
 }
 
 void discovered_uniform::render_imgui() {
-    boost::apply_visitor(imgui_render_visitor{*this}, value);
+    std::visit(imgui_render_visitor{*this}, value);
 }
 
 discovered_uniform discovered_uniform::parse_spec(
@@ -388,9 +388,9 @@ struct variant_setter {
 };
 
 bool try_set_variant(uniform_variant &dst, const uniform_variant &value) {
-    return boost::apply_visitor(
+    return std::visit(
         [&value](auto &left) -> bool {
-            return boost::apply_visitor(
+            return std::visit(
                 [&left](auto &right) -> bool {
                     return variant_setter()
                         .try_set_variant<

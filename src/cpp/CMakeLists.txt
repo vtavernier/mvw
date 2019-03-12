@@ -6,7 +6,7 @@ add_library(mvw ${MVW_SOURCES})
 
 target_include_directories(mvw PUBLIC ${INCLUDE_ROOT})
 target_include_directories(mvw PRIVATE ${Boost_INCLUDE_DIRS})
-target_link_libraries(mvw PUBLIC shadertoy-shared ${Boost_filesystem_LIBRARY} assimp)
+target_link_libraries(mvw PUBLIC shadertoy-shared assimp)
 target_compile_options(mvw PRIVATE -Wall;-Werror=return-type)
 
 # Create viewer target

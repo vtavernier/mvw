@@ -10,7 +10,7 @@ in vec2 vtexCoord;
 in vec3 vNormal;
 in vec3 vPosition;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 #pragma shadertoy part *:defines
 

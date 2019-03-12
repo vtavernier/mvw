@@ -1,12 +1,12 @@
 #ifndef _DETAIL_DISCOVERED_UNIFORM_HPP_
 #define _DETAIL_DISCOVERED_UNIFORM_HPP_
 
-#include <boost/variant.hpp>
+#include <variant>
 
 #include <msgpack.hpp>
 
 template <typename Stream>
-class uniform_variant_packer : public boost::static_visitor<void> {
+class uniform_variant_packer {
     msgpack::packer<Stream> &o_;
 
 #define PACK_UNIFORM_SCALAR(U)                 \
@@ -57,7 +57,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         template <typename Stream>
         msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o,
                                             uniform_variant const &v) const {
-            boost::apply_visitor(uniform_variant_packer<Stream>{o}, v);
+            std::visit(uniform_variant_packer<Stream>{o}, v);
             return o;
         }
     };

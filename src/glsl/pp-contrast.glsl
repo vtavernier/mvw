@@ -15,5 +15,5 @@ void mainImage(out vec4 O, in vec2 U)
     O.rgb = .5 * O.rgb + .5;
 
     // Apply lighting component
-    if (!dQuad) O.rgb *= c.g;
+    if (!dQuad) O.rgb *= texture(iChannel1, U / iResolution.xy).rgb;
 }
