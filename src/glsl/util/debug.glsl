@@ -1,4 +1,4 @@
-void debugCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
+void debugCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 w0) {
     pg_state pstate;
 
     ivec3 count = ivec3(ceil((bboxMax - bboxMin) / _TILE_SIZE));
@@ -10,7 +10,7 @@ void debugCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
     O = vec4(vec3(.75), 1.) * O + .25 * vec4(pt.rgb * .5 + .5, 1.);
 }
 
-void debugRot(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
+void debugRot(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 w0) {
     float phase = 2. * M_PI * gF0 * dot((P - center), W0VEC(gW0));
     O = vec4(cos(phase), sin(phase), -1., 1.);
 }

@@ -11,7 +11,7 @@ m4_include(gabor/grid.glsl)
 #define W0VEC(w0) vec3(cos(w0.x)*cos(w0.y),sin(w0.x)*cos(w0.y),sin(w0.y))
 #define _TILE_SIZE vec3(gTilesize)
 
-void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
+void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 w0) {
     vec3 n = normalize(vNormal);
 
     // Seed the point generator
@@ -37,8 +37,8 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
         // Compute relative location
         td_point.xyz = (P - td_point.xyz) / _TILE_SIZE;
 
-        // Compute contribution
-        O += h3(td_point.xyz, 1.0, gF0, W0VEC(gW0), _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
+        // Compute filtered contribution
+        O += h3(td_point.xyz, 1.0, gF0, w0, _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
     }
 }
 

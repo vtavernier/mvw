@@ -12,8 +12,9 @@ void mainImage(out vec4 O, in vec2 U)
 
     //debugRotGrid(O, vPosition, 0, _TILE_SIZE);
 
+    vec3 w0 = W0VEC(gW0);
     // Grid-evaluate Gabor noise
-    gaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE);
+    gaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE, w0);
 
     // Normalize output
     O = 1. / sqrt(3.) * O / sqrt(float(gSplats));
@@ -31,7 +32,7 @@ void mainImage(out vec4 O, in vec2 U)
 
     // Overlay debug output if needed
     if (dGrid) {
-        debugGrid(O, vPosition, 0, _TILE_SIZE);
+        debugGrid(O, vPosition, 0, _TILE_SIZE, w0);
     }
 
     // Compute fragment lighting
