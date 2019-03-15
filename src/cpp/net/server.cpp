@@ -11,6 +11,7 @@
 #include "net/server.hpp"
 
 using namespace net;
+using shadertoy::operator==; // for output_name_t
 
 namespace net {
 typedef msgpack::type::tuple<bool, std::string> default_reply;
@@ -80,11 +81,60 @@ class server_impl {
 
 void server::handle_getframe(gl_state &gl_state, int revision, const std::string &target) const {
     std::vector<shadertoy::members::member_output_t> output;
+    std::vector<shadertoy::members::member_output_t>::const_iterator output_target;
+    shadertoy::output_name_t buffer_output_name = 0;
 
     try
     {
+        // Split name on dot
+        auto dot_pos = target.find('.');
+        std::string target_name, output_name;
+
+        if (dot_pos == std::string::npos) 
+        {
+            target_name = target;
+        }
+        else
+        {
+            target_name.assign(target.begin(), target.begin() + dot_pos);
+            output_name.assign(target.begin() + dot_pos + 1, target.end());
+        }
+
         // Get rendered-to texture
-        output = gl_state.get_render_result(revision, target);
+        output = gl_state.get_render_result(revision, target_name);
+
+        // Set the output name
+        if (!output_name.empty())
+        {
+            int id = -1;
+            std::stringstream ss(output_name);
+            ss >> id;
+
+            // Set it either as a location or a name
+            if (ss.fail())
+                buffer_output_name = output_name;
+            else
+                buffer_output_name = id;
+        }
+
+        // Try to find the right output
+        output_target =
+            std::find_if(output.begin(), output.end(),
+                         [&buffer_output_name](const auto &out) {
+                             return std::get<0>(out) == buffer_output_name;
+                         });
+
+        if (output_target == output.end())
+        {
+            std::stringstream ss;
+            std::visit(
+                [&ss, &target_name](const auto &name) {
+                    ss << "output target '" << name
+                       << "' was not found on buffer '" << target_name << "'";
+                },
+                buffer_output_name);
+            throw std::runtime_error(ss.str());
+        }
     }
     catch (std::runtime_error &ex)
     {
@@ -93,9 +143,7 @@ void server::handle_getframe(gl_state &gl_state, int revision, const std::string
         return;
     }
 
-    auto texture(std::get<1>(*std::find_if(
-        output.begin(), output.end(),
-        [](const auto &out) { return std::get<1>(std::get<0>(out)) == 0; })));
+    auto texture(std::get<1>(*output_target));
 
     // Get texture parameters and format
     GLint width, height, internal_format;
