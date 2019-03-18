@@ -140,6 +140,11 @@ void viewer_window::run() {
 
         ImGui::Checkbox("Render as quad", &state_->draw_quad);
 
+        if (ImGui::Button("Resize")) {
+            gl_state_->render_size = window_render_size_;
+            gl_state_->allocate_textures();
+        }
+
         bool previous_rotate = state_->rotate_camera;
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
