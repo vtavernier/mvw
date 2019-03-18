@@ -18,10 +18,13 @@ void mainImage(out vec4 O, in vec2 U)
     vec3 n = normalize(vNormal);
     vec3 w0 = W0VEC(gW0);
     vec3 w0p0 = w0 - dot(w0, n) * n;
-    float w0p0n = length(w0p0);
 
-    vec2 wP = 2. * M_PI * gF0 * vec2(length(dFdx(w0p0)), length(dFdy(w0p0)));
-    float f = exp(-pow(w0p0n * length(wP) / aSigma, 2.) / 2.);
+    float p = dot(vPosition, w0);
+    vec2 w0p = abs(vec2(dFdx(p), dFdy(p)));
+    float w0pn = length(w0p);
+
+    vec2 wP = 2. * M_PI * gF0 * w0p;
+    float f = exp(-pow(length(w0p0) * length(wP) / aSigma, 2.) / 2.);
 
     // Grid-evaluate Gabor noise
     gaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE, w0);
