@@ -16,6 +16,8 @@ class viewer_state;
 #define CMD_NAME_SETCAMERA "setcamera"
 #define CMD_NAME_GETROTATION "getrotation"
 #define CMD_NAME_SETROTATION "setrotation"
+#define CMD_NAME_GETSCALE "getscale"
+#define CMD_NAME_SETSCALE "setscale"
 #define CMD_NAME_GEOMETRY "geometry"
 
 namespace net {
@@ -40,6 +42,10 @@ class server {
     void handle_getrotation(viewer_state &state) const;
 
     void handle_setrotation(viewer_state &state, bool &changed_state) const;
+
+    void handle_getscale(viewer_state &state) const;
+
+    void handle_setscale(viewer_state &state, bool &changed_state) const;
 
     void handle_geometry(gl_state &gl_state, bool &changed_state) const;
 

@@ -31,6 +31,9 @@ typedef bool setcamera_reply;
 typedef msgpack::type::tuple<bool, glm::vec2> getrotation_reply;
 typedef glm::vec2 setrotation_args;
 typedef bool setrotation_reply;
+typedef msgpack::type::tuple<bool, float> getscale_reply;
+typedef float setscale_args;
+typedef bool setscale_reply;
 typedef msgpack::type::tuple<bool, std::string> geometry_args; // 0 is true if NFF format
 typedef bool geometry_reply;
 
@@ -310,6 +313,31 @@ void server::handle_setrotation(viewer_state &state,
     impl_->send(result);
 }
 
+void server::handle_getscale(viewer_state &state) const {
+    // Nothing to do, just send the scale parameters
+    getscale_reply result(true, state.scale);
+    impl_->send(result);
+}
+
+void server::handle_setscale(viewer_state &state, bool &changed_state) const {
+    setscale_args args;
+
+    try {
+        args = impl_->recv<setscale_args>();
+    } catch (msgpack::type_error &ex) {
+        net::default_reply result(false, "invalid scale parameter");
+        impl_->send(result);
+        return;
+    }
+
+    state.scale = args;
+
+    changed_state = true;
+
+    setscale_reply result(true);
+    impl_->send(result);
+}
+
 void server::handle_geometry(gl_state &gl_state, bool &changed_state) const
 {
     geometry_args args;
@@ -411,6 +439,10 @@ bool server::poll(viewer_state &state, gl_state &gl_state, int revision) const {
                 handle_getrotation(state);
             } else if (cmdname.compare(CMD_NAME_SETROTATION) == 0) {
                 handle_setrotation(state, changed_state);
+            } else if (cmdname.compare(CMD_NAME_GETSCALE) == 0) {
+                handle_getscale(state);
+            } else if (cmdname.compare(CMD_NAME_SETSCALE) == 0) {
+                handle_setscale(state, changed_state);
             } else if (cmdname.compare(CMD_NAME_GEOMETRY) == 0) {
                 handle_geometry(gl_state, changed_state);
             } else {

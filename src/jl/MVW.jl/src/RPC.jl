@@ -160,6 +160,40 @@ function setrotation(connection::Connection, rotation)
     end
 end
 
+function getscale(connection::Connection)
+    # Send getscale request
+    msg = ZMQ.Message("getscale")
+    ZMQ.send(connection.socket, msg)
+
+    # Get result
+    (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if success
+        details
+    else
+        error("getscale failed: " * details)
+    end
+end
+
+function setscale(connection::Connection, scale)
+    # Send setscale request
+    msg = ZMQ.Message("setscale")
+    ZMQ.send(connection.socket, msg; more=true)
+
+    # Send argument
+    msg = ZMQ.Message(MsgPack.pack(scale))
+    ZMQ.send(connection.socket, msg)
+
+    # Fetch response
+    response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if response isa Bool
+    else
+        (success, details) = response
+        error("setscale failed: " * details)
+    end
+end
+
 function geometry(connection::Connection, is_nff_source::Bool, source::AbstractString)
     # Send geometry request
     msg = ZMQ.Message("geometry")
