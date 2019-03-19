@@ -1,9 +1,9 @@
 //! int gSplats min=1 max=30 def=3 fmt="%d" cat="Gabor noise" unm="Splats"
-//! float gF0 min=0.001 max=100.0 fmt="%2.4f" pow=7.0 cat="Gabor noise" unm="F0" def=1.0
-//! vec2 gW0 min=0 max=360 fmt="%2.2f" cat="Gabor noise" unm="W0" ang
+//! float gF0 min=0.001 max=100.0 fmt="%2.4f" pow=1.0 cat="Gabor noise" unm="F0" def=1.0 mode=input
+//! vec2 gW0 min=0 max=360 fmt="%2.2f" cat="Gabor noise" unm="W0" mod=angle
 //! bool dGrid def=false cat="Debug" unm="Show grid"
 
-//! float aSigma min=0.01 max=2.0 fmt="%2.3f" cat="Prefiltering" unm="Sigma" def=1.0 pow=2.0
+//! float aSigma min=0.01 max=2.0 fmt="%2.3f" cat="Prefiltering" unm="Sigma" def=1.0
 
 layout(location = 1) out vec4 fragLighting;
 

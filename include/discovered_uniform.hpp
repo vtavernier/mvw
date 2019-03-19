@@ -18,6 +18,14 @@ typedef std::variant<float, glm::vec2, glm::vec3, glm::vec4, int, glm::ivec2,
 
 #include "detail/discovered_uniform.hpp"
 
+enum uniform_mode {
+    UM_SLIDER = 0,
+    UM_ANGLE = 1,
+    UM_INPUT = 2,
+};
+
+MSGPACK_ADD_ENUM(uniform_mode);
+
 struct discovered_uniform {
     uniform_variant value;
     uniform_variant s_min;
@@ -30,13 +38,13 @@ struct discovered_uniform {
     std::string s_name;
     std::string s_username;
 
-    bool s_angle;
+    uniform_mode s_mode;
 
     discovered_uniform(uniform_variant s_min, uniform_variant s_max,
                        uniform_variant s_pow, uniform_variant s_def,
                        const std::string &s_fmt, const std::string &s_cat,
                        const std::string &s_name, const std::string &s_username,
-                       bool s_angle);
+                       uniform_mode s_mode);
 
     void set_uniform(parsed_inputs_t &inputs);
 
@@ -49,10 +57,10 @@ struct discovered_uniform {
         const std::string &l_fmt, const std::string &l_pow,
         const std::string &l_cat, const std::string &l_def,
         const std::string &l_name, const std::string &l_unm,
-        const std::string &type, bool l_ang);
+        const std::string &type, const std::string &l_mode);
 
     MSGPACK_DEFINE_MAP(value, s_min, s_max, s_pow, s_def, s_fmt, s_cat, s_name,
-                       s_username, s_angle);
+                       s_username, s_mode);
 };
 
 void try_parse_uniform(const std::string &line,

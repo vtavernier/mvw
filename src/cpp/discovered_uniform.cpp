@@ -26,7 +26,7 @@ static const regex regex_varpow("\\bpow(?:er)?=(\\S+)\\b", regex::ECMAScript);
 static const regex regex_varcat("\\bcat(?:egory)?=\"([^\"]+)\"", regex::ECMAScript);
 static const regex regex_vardef("\\bdef(?:ault)?=(\\S+)", regex::ECMAScript);
 static const regex regex_varunm("\\b(?:unm|username|label)=\"([^\"]+)\"", regex::ECMAScript);
-static const regex regex_varang("\\bang(?:le)?\\b", regex::ECMAScript);
+static const regex regex_varmod("\\bmod(?:e)?=(\\S+)", regex::ECMAScript);
 
 template <typename Tvec>
 uniform_variant parse_variant1(const std::string &l) {
@@ -99,13 +99,15 @@ template <>
 struct single_value<float> {
     bool operator()(float vmin, float vmax, float &vx, float vpw,
                     const std::string &label, const std::string &format,
-                    bool angle) {
-        if (angle) {
+                    uniform_mode mode) {
+        if (mode == UM_ANGLE) {
             return ImGui::SliderAngle(label.c_str(), &vx, vmin, vmax,
                                       format.c_str());
-        } else {
+        } else if (mode == UM_SLIDER) {
             return ImGui::SliderFloat(label.c_str(), &vx, vmin, vmax,
                                       format.c_str(), vpw);
+        } else /* if (mode == UM_INPUT) */ {
+            return ImGui::InputFloat(label.c_str(), &vx, vpw, vpw * 5.0, 4);
         }
     }
 };
@@ -114,8 +116,13 @@ template <>
 struct single_value<int> {
     bool operator()(int vmin, int vmax, int &vx, int _vpw,
                     const std::string &label, const std::string &format,
-                    bool _angle) {
-        return ImGui::SliderInt(label.c_str(), &vx, vmin, vmax, format.c_str());
+                    uniform_mode mode) {
+        if (mode == UM_SLIDER) {
+            return ImGui::SliderInt(label.c_str(), &vx, vmin, vmax,
+                                    format.c_str());
+        } else /* if (mode == UM_INPUT) */ {
+            return ImGui::InputInt(label.c_str(), &vx);
+        }
     }
 };
 
@@ -123,7 +130,7 @@ template <>
 struct single_value<bool> {
     bool operator()(bool _vmin, bool _vmax, bool &vx, bool _vpw,
                     const std::string &label, const std::string &format,
-                    bool _angle) {
+                    uniform_mode _mode) {
         return ImGui::Checkbox(label.c_str(), &vx);
     }
 };
@@ -132,13 +139,55 @@ template <typename T>
 struct vec2_value {
     bool operator()(glm::tvec2<T> vmin, glm::tvec2<T> vmax, glm::tvec2<T> &vx,
                     glm::tvec2<T> vpw, const std::string &label,
-                    const std::string &format, bool angle) {
+                    const std::string &format, uniform_mode mode) {
         bool changed = false;
 
         changed |= single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x",
-                                     format, angle);
+                                     format, mode);
         changed |= single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y",
-                                     format, angle);
+                                     format, mode);
+
+        return changed;
+    }
+};
+
+template <>
+struct vec2_value<float> {
+    bool operator()(glm::tvec2<float> vmin, glm::tvec2<float> vmax,
+                    glm::tvec2<float> &vx, glm::tvec2<float> vpw,
+                    const std::string &label, const std::string &format,
+                    uniform_mode mode) {
+        bool changed = false;
+
+        if (mode == UM_INPUT) {
+            changed |= ImGui::InputFloat2(label.c_str(), &vx.x, 4);
+        } else {
+            changed |= single_value<float>{}(vmin.x, vmax.x, vx.x, vpw.x,
+                                             label + ".x", format, mode);
+            changed |= single_value<float>{}(vmin.y, vmax.y, vx.y, vpw.y,
+                                             label + ".y", format, mode);
+        }
+
+        return changed;
+    }
+};
+
+template <>
+struct vec2_value<int> {
+    bool operator()(glm::tvec2<int> vmin, glm::tvec2<int> vmax,
+                    glm::tvec2<int> &vx, glm::tvec2<int> vpw,
+                    const std::string &label, const std::string &format,
+                    uniform_mode mode) {
+        bool changed = false;
+
+        if (mode == UM_INPUT) {
+            changed |= ImGui::InputInt2(label.c_str(), &vx.x, 4);
+        } else {
+            changed |= single_value<int>{}(vmin.x, vmax.x, vx.x, vpw.x,
+                                           label + ".x", format, mode);
+            changed |= single_value<int>{}(vmin.y, vmax.y, vx.y, vpw.y,
+                                           label + ".y", format, mode);
+        }
 
         return changed;
     }
@@ -148,15 +197,61 @@ template <typename T>
 struct vec3_value {
     bool operator()(glm::tvec3<T> vmin, glm::tvec3<T> vmax, glm::tvec3<T> &vx,
                     glm::tvec3<T> vpw, const std::string &label,
-                    const std::string &format, bool angle) {
+                    const std::string &format, uniform_mode mode) {
         bool changed = false;
 
         changed |= single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x",
-                                     format, angle);
+                                     format, mode);
         changed |= single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y",
-                                     format, angle);
+                                     format, mode);
         changed |= single_value<T>{}(vmin.z, vmax.z, vx.z, vpw.z, label + ".z",
-                                     format, angle);
+                                     format, mode);
+
+        return changed;
+    }
+};
+
+template <>
+struct vec3_value<float> {
+    bool operator()(glm::tvec3<float> vmin, glm::tvec3<float> vmax,
+                    glm::tvec3<float> &vx, glm::tvec3<float> vpw,
+                    const std::string &label, const std::string &format,
+                    uniform_mode mode) {
+        bool changed = false;
+
+        if (mode == UM_INPUT) {
+            changed |= ImGui::InputFloat3(label.c_str(), &vx.x, 4);
+        } else {
+            changed |= single_value<float>{}(vmin.x, vmax.x, vx.x, vpw.x,
+                                             label + ".x", format, mode);
+            changed |= single_value<float>{}(vmin.y, vmax.y, vx.y, vpw.y,
+                                             label + ".y", format, mode);
+            changed |= single_value<float>{}(vmin.z, vmax.z, vx.z, vpw.z,
+                                             label + ".z", format, mode);
+        }
+
+        return changed;
+    }
+};
+
+template <>
+struct vec3_value<int> {
+    bool operator()(glm::tvec3<int> vmin, glm::tvec3<int> vmax,
+                    glm::tvec3<int> &vx, glm::tvec3<int> vpw,
+                    const std::string &label, const std::string &format,
+                    uniform_mode mode) {
+        bool changed = false;
+
+        if (mode == UM_INPUT) {
+            changed |= ImGui::InputInt3(label.c_str(), &vx.x, 4);
+        } else {
+            changed |= single_value<int>{}(vmin.x, vmax.x, vx.x, vpw.x,
+                                           label + ".x", format, mode);
+            changed |= single_value<int>{}(vmin.y, vmax.y, vx.y, vpw.y,
+                                           label + ".y", format, mode);
+            changed |= single_value<int>{}(vmin.z, vmax.z, vx.z, vpw.z,
+                                           label + ".z", format, mode);
+        }
 
         return changed;
     }
@@ -166,17 +261,67 @@ template <typename T>
 struct vec4_value {
     bool operator()(glm::tvec4<T> vmin, glm::tvec4<T> vmax, glm::tvec4<T> &vx,
                     glm::tvec4<T> vpw, const std::string &label,
-                    const std::string &format, bool angle) {
+                    const std::string &format, uniform_mode mode) {
         bool changed = false;
 
         changed |= single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x",
-                                     format, angle);
+                                     format, mode);
         changed |= single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y",
-                                     format, angle);
+                                     format, mode);
         changed |= single_value<T>{}(vmin.z, vmax.z, vx.z, vpw.z, label + ".z",
-                                     format, angle);
+                                     format, mode);
         changed |= single_value<T>{}(vmin.w, vmax.w, vx.w, vpw.w, label + ".w",
-                                     format, angle);
+                                     format, mode);
+
+        return changed;
+    }
+};
+
+template <>
+struct vec4_value<float> {
+    bool operator()(glm::tvec4<float> vmin, glm::tvec4<float> vmax,
+                    glm::tvec4<float> &vx, glm::tvec4<float> vpw,
+                    const std::string &label, const std::string &format,
+                    uniform_mode mode) {
+        bool changed = false;
+
+        if (mode == UM_INPUT) {
+            changed |= ImGui::InputFloat4(label.c_str(), &vx.x, 4);
+        } else {
+            changed |= single_value<float>{}(vmin.x, vmax.x, vx.x, vpw.x,
+                                             label + ".x", format, mode);
+            changed |= single_value<float>{}(vmin.y, vmax.y, vx.y, vpw.y,
+                                             label + ".y", format, mode);
+            changed |= single_value<float>{}(vmin.z, vmax.z, vx.z, vpw.z,
+                                             label + ".z", format, mode);
+            changed |= single_value<float>{}(vmin.w, vmax.w, vx.w, vpw.w,
+                                             label + ".w", format, mode);
+        }
+
+        return changed;
+    }
+};
+
+template <>
+struct vec4_value<int> {
+    bool operator()(glm::tvec4<int> vmin, glm::tvec4<int> vmax,
+                    glm::tvec4<int> &vx, glm::tvec4<int> vpw,
+                    const std::string &label, const std::string &format,
+                    uniform_mode mode) {
+        bool changed = false;
+
+        if (mode == UM_INPUT) {
+            changed |= ImGui::InputInt4(label.c_str(), &vx.x, 4);
+        } else {
+            changed |= single_value<int>{}(vmin.x, vmax.x, vx.x, vpw.x,
+                                           label + ".x", format, mode);
+            changed |= single_value<int>{}(vmin.y, vmax.y, vx.y, vpw.y,
+                                           label + ".y", format, mode);
+            changed |= single_value<int>{}(vmin.z, vmax.z, vx.z, vpw.z,
+                                           label + ".z", format, mode);
+            changed |= single_value<int>{}(vmin.w, vmax.w, vx.w, vpw.w,
+                                           label + ".w", format, mode);
+        }
 
         return changed;
     }
@@ -216,7 +361,7 @@ class imgui_render_visitor {
         return typename vec_dispatch<T>::target_type{}(
             std::get<T>(uniform_.s_min), std::get<T>(uniform_.s_max), value,
             std::get<T>(uniform_.s_pow), uniform_.s_username, uniform_.s_fmt,
-            uniform_.s_angle);
+            uniform_.s_mode);
     }
 
     imgui_render_visitor(discovered_uniform &uniform) : uniform_(uniform) {}
@@ -225,7 +370,8 @@ class imgui_render_visitor {
 discovered_uniform::discovered_uniform(
     uniform_variant s_min, uniform_variant s_max, uniform_variant s_pow,
     uniform_variant s_def, const std::string &s_fmt, const std::string &s_cat,
-    const std::string &s_name, const std::string &s_username, bool s_angle)
+    const std::string &s_name, const std::string &s_username,
+    uniform_mode s_mode)
     : value(s_def),
       s_min(s_min),
       s_max(s_max),
@@ -235,7 +381,7 @@ discovered_uniform::discovered_uniform(
       s_cat(s_cat),
       s_name(s_name),
       s_username(s_username),
-      s_angle(s_angle) {}
+      s_mode(s_mode) {}
 
 void discovered_uniform::set_uniform(parsed_inputs_t &inputs) {
     std::visit(uniform_setter_visitor{s_name, inputs}, value);
@@ -249,65 +395,77 @@ bool discovered_uniform::render_imgui() {
     return std::visit(imgui_render_visitor{*this}, value);
 }
 
+uniform_mode parse_mode(const std::string &mode) {
+    if (mode == "input")
+        return UM_INPUT;
+    else if (mode == "slider")
+        return UM_SLIDER;
+    else if (mode == "angle")
+        return UM_ANGLE;
+
+    VLOG->warn("Unknown uniform mode '{}'", mode);
+    return UM_SLIDER;
+}
+
 discovered_uniform discovered_uniform::parse_spec(
     const std::string &l_min, const std::string &l_max,
     const std::string &l_fmt, const std::string &l_pow,
     const std::string &l_cat, const std::string &l_def,
     const std::string &l_name, const std::string &l_unm,
-    const std::string &type, bool l_ang) {
+    const std::string &type, const std::string &l_mode) {
 #define __UNIFORM_T1(T, ___min, ___max, ___fmt, ___pow, ___cat, ___def,       \
-                     ___name, ___unm, ___ang)                                 \
+                     ___name, ___unm, ___mod)                                 \
     return discovered_uniform(                                                \
         parse_variant1<T>(___min), parse_variant1<T>(___max),                 \
         parse_variant1<T>(___pow), parse_variant1<T>(___def), ___fmt, ___cat, \
-        ___name, ___unm, ___ang)
+        ___name, ___unm, parse_mode(___mod))
 #define __UNIFORM_TN(T, N, ___min, ___max, ___fmt, ___pow, ___cat, ___def,  \
-                     ___name, ___unm, ___ang)                               \
+                     ___name, ___unm, ___mod)                               \
     return discovered_uniform(parse_variantN<T##N COMMA N>(___min),         \
                               parse_variantN<T##N COMMA N>(___max),         \
                               parse_variantN<T##N COMMA N>(___pow),         \
                               parse_variantN<T##N COMMA N>(___def), ___fmt, \
-                              ___cat, ___name, ___unm, ___ang)
+                              ___cat, ___name, ___unm, parse_mode(___mod))
 #define COMMA ,
 
     if (type == "float")
         __UNIFORM_T1(float, l_min, l_max, l_fmt, l_pow, l_cat, l_def, l_name,
-                     l_unm, l_ang);
+                     l_unm, l_mode);
     if (type == "vec2")
         __UNIFORM_TN(glm::vec, 2, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
     if (type == "vec3")
         __UNIFORM_TN(glm::vec, 3, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
     if (type == "vec4")
         __UNIFORM_TN(glm::vec, 4, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
 
     if (type == "int")
         __UNIFORM_T1(int, l_min, l_max, l_fmt, l_pow, l_cat, l_def, l_name,
-                     l_unm, l_ang);
+                     l_unm, l_mode);
     if (type == "ivec2")
         __UNIFORM_TN(glm::ivec, 2, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
     if (type == "ivec3")
         __UNIFORM_TN(glm::ivec, 3, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
     if (type == "ivec4")
         __UNIFORM_TN(glm::ivec, 4, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
 
     if (type == "bool")
         __UNIFORM_T1(bool, l_min, l_max, l_fmt, l_pow, l_cat, l_def, l_name,
-                     l_unm, l_ang);
+                     l_unm, l_mode);
     if (type == "bvec2")
         __UNIFORM_TN(glm::bvec, 2, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
     if (type == "bvec3")
         __UNIFORM_TN(glm::bvec, 3, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
     if (type == "bvec4")
         __UNIFORM_TN(glm::bvec, 4, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_ang);
+                     l_name, l_unm, l_mode);
 
     throw std::runtime_error("invalid type");
 }
@@ -321,7 +479,7 @@ void try_parse_uniform(const std::string &line,
         auto spec = match.str(3);
 
         std::smatch match_min, match_max, match_fmt, match_pow, match_cat,
-            match_def, match_unm, match_ang;
+            match_def, match_unm, match_mod;
         regex_search(spec, match_min, regex_varmin);
         regex_search(spec, match_max, regex_varmax);
         regex_search(spec, match_fmt, regex_varfmt);
@@ -329,7 +487,7 @@ void try_parse_uniform(const std::string &line,
         regex_search(spec, match_cat, regex_varcat);
         regex_search(spec, match_def, regex_vardef);
         regex_search(spec, match_unm, regex_varunm);
-        regex_search(spec, match_ang, regex_varang);
+        regex_search(spec, match_mod, regex_varmod);
 
         VLOG->info("Parsed uniform declaration for {} \"{}\" (type {})", name,
                    match_unm.size() > 1 ? match_unm.str(1) : "", type);
@@ -342,7 +500,7 @@ void try_parse_uniform(const std::string &line,
             match_cat.size() > 1 ? match_cat.str(1) : "",
             match_def.size() > 1 ? match_def.str(1) : "", name,
             match_unm.size() > 1 ? match_unm.str(1) : name, type,
-            match_ang.size() > 0));
+            match_mod.size() > 1 ? match_mod.str(1) : "slider"));
     }
 }
 
