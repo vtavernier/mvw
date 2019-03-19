@@ -74,6 +74,20 @@ gl_state::chain_instance::chain_instance(
     g_buffer_template->shader_inputs()["parsed"] = &parsed_inputs;
     context.buffer_template().shader_inputs()["parsed"] = &parsed_inputs;
 
+    // Compile shaders
+    opt.shader.invoke(
+        [this](const auto &path) {
+            if (this->opt.use_make) compile_shader_source(path);
+        },
+        [this](const auto &_source) {});
+
+    if (has_postprocess)
+        opt.postprocess.invoke(
+            [this](const auto &path) {
+                if (this->opt.use_make) compile_shader_source(path);
+            },
+            [this](const auto &source) {});
+
     // Parse uniforms from source
     parse_uniforms(opt.shader);
     parse_uniforms(opt.postprocess);
@@ -89,10 +103,7 @@ gl_state::chain_instance::chain_instance(
     geometry_buffer->override_program(g_buffer_template);
 
     opt.shader.invoke(
-        [this](const auto &path) {
-            if (this->opt.use_make) compile_shader_source(path);
-            geometry_buffer->source_file(path);
-        },
+        [this](const auto &path) { geometry_buffer->source_file(path); },
         [this](const auto &source) { geometry_buffer->source(source); });
 
     // Add the geometry buffer to the swap chain, at the given size
@@ -134,10 +145,7 @@ gl_state::chain_instance::chain_instance(
             std::make_shared<buffers::toy_buffer>("postprocess");
 
         opt.postprocess.invoke(
-            [this](const auto &path) {
-                if (this->opt.use_make) compile_shader_source(path);
-                postprocess_buffer->source_file(path);
-            },
+            [this](const auto &path) { postprocess_buffer->source_file(path); },
             [this](const auto &source) { postprocess_buffer->source(source); });
 
         // The postprocess pass has the output of the geometry pass as input 0
