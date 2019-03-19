@@ -6,11 +6,16 @@
 #include "options.hpp"
 
 class gl_state;
+class viewer_state;
 
 #define CMD_NAME_GETFRAME "getframe"
 #define CMD_NAME_GETPARAMS "getparams"
 #define CMD_NAME_GETPARAM "getparam"
 #define CMD_NAME_SETPARAM "setparam"
+#define CMD_NAME_GETCAMERA "getcamera"
+#define CMD_NAME_SETCAMERA "setcamera"
+#define CMD_NAME_GETROTATION "getrotation"
+#define CMD_NAME_SETROTATION "setrotation"
 
 namespace net {
 class server_impl;
@@ -27,12 +32,20 @@ class server {
 
     void handle_setparam(gl_state &gl_state, int revision, bool &changed_state) const;
 
+    void handle_getcamera(viewer_state &state) const;
+
+    void handle_setcamera(viewer_state &state, bool &changed_state) const;
+
+    void handle_getrotation(viewer_state &state) const;
+
+    void handle_setrotation(viewer_state &state, bool &changed_state) const;
+
    public:
     server(const server_options &opt);
     // non-trivial destructor because of pimpl
     ~server();
 
-    bool poll(gl_state &gl_state, int revision) const;
+    bool poll(viewer_state &state, gl_state &gl_state, int revision) const;
 };
 }  // namespace net
 

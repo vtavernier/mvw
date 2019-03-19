@@ -52,6 +52,174 @@ namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     namespace adaptor {
 
+    template <typename T>
+    struct pack<glm::tvec2<T>> {
+        template <typename Stream>
+        msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o,
+                                            glm::tvec2<T> const &v) const {
+            o.pack_array(2);
+            msgpack::adaptor::pack<T>()(o, v.x);
+            msgpack::adaptor::pack<T>()(o, v.y);
+            return o;
+        }
+    };
+
+    template <typename T>
+    struct convert<glm::tvec2<T>> {
+        msgpack::object const &operator()(msgpack::object const &o,
+                                          glm::tvec2<T> &v) const {
+            if (o.type == msgpack::type::ARRAY) {
+                if (o.via.array.size == 2) {
+                    if (o.via.array.ptr[0].type == msgpack::type::FLOAT32 ||
+                        o.via.array.ptr[0].type == msgpack::type::FLOAT64) {
+                        v = glm::tvec2<T>(o.via.array.ptr[0].as<float>(),
+                                          o.via.array.ptr[1].as<float>());
+                    } else if (o.via.array.ptr[0].type ==
+                                   msgpack::type::POSITIVE_INTEGER ||
+                               o.via.array.ptr[0].type ==
+                                   msgpack::type::NEGATIVE_INTEGER) {
+                        v = glm::tvec2<T>(o.via.array.ptr[0].as<int>(),
+                                          o.via.array.ptr[1].as<int>());
+                    } else if (o.via.array.ptr[0].type ==
+                               msgpack::type::BOOLEAN) {
+                        v = glm::tvec2<T>(o.via.array.ptr[0].as<bool>(),
+                                          o.via.array.ptr[1].as<bool>());
+                    } else {
+                        throw msgpack::type_error();
+                    }
+                }
+            } else if (o.type == msgpack::type::FLOAT32 ||
+                       o.type == msgpack::type::FLOAT64) {
+                v = glm::tvec2<T>(o.as<float>());
+            } else if (o.type == msgpack::type::POSITIVE_INTEGER ||
+                       o.type == msgpack::type::NEGATIVE_INTEGER) {
+                v = glm::tvec2<T>(o.as<int>());
+            } else if (o.type == msgpack::type::BOOLEAN) {
+                v = glm::tvec2<T>(o.as<bool>());
+            } else {
+                throw msgpack::type_error();
+            }
+
+            return o;
+        }
+    };
+
+    template <typename T>
+    struct pack<glm::tvec3<T>> {
+        template <typename Stream>
+        msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o,
+                                            glm::tvec3<T> const &v) const {
+            o.pack_array(3);
+            msgpack::adaptor::pack<T>()(o, v.x);
+            msgpack::adaptor::pack<T>()(o, v.y);
+            msgpack::adaptor::pack<T>()(o, v.z);
+            return o;
+        }
+    };
+
+    template <typename T>
+    struct convert<glm::tvec3<T>> {
+        msgpack::object const &operator()(msgpack::object const &o,
+                                          glm::tvec3<T> &v) const {
+            if (o.type == msgpack::type::ARRAY) {
+                if (o.via.array.size == 3) {
+                    if (o.via.array.ptr[0].type == msgpack::type::FLOAT32 ||
+                        o.via.array.ptr[0].type == msgpack::type::FLOAT64) {
+                        v = glm::tvec3<T>(o.via.array.ptr[0].as<float>(),
+                                          o.via.array.ptr[1].as<float>(),
+                                          o.via.array.ptr[2].as<float>());
+                    } else if (o.via.array.ptr[0].type ==
+                                   msgpack::type::POSITIVE_INTEGER ||
+                               o.via.array.ptr[0].type ==
+                                   msgpack::type::NEGATIVE_INTEGER) {
+                        v = glm::tvec3<T>(o.via.array.ptr[0].as<int>(),
+                                          o.via.array.ptr[1].as<int>(),
+                                          o.via.array.ptr[2].as<int>());
+                    } else if (o.via.array.ptr[0].type ==
+                               msgpack::type::BOOLEAN) {
+                        v = glm::tvec3<T>(o.via.array.ptr[0].as<bool>(),
+                                          o.via.array.ptr[1].as<bool>(),
+                                          o.via.array.ptr[2].as<bool>());
+                    } else {
+                        throw msgpack::type_error();
+                    }
+                }
+            } else if (o.type == msgpack::type::FLOAT32 ||
+                       o.type == msgpack::type::FLOAT64) {
+                v = glm::tvec3<T>(o.as<float>());
+            } else if (o.type == msgpack::type::POSITIVE_INTEGER ||
+                       o.type == msgpack::type::NEGATIVE_INTEGER) {
+                v = glm::tvec3<T>(o.as<int>());
+            } else if (o.type == msgpack::type::BOOLEAN) {
+                v = glm::tvec3<T>(o.as<bool>());
+            } else {
+                throw msgpack::type_error();
+            }
+
+            return o;
+        }
+    };
+
+    template <typename T>
+    struct pack<glm::tvec4<T>> {
+        template <typename Stream>
+        msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o,
+                                            glm::tvec4<T> const &v) const {
+            o.pack_array(4);
+            msgpack::adaptor::pack<T>()(o, v.x);
+            msgpack::adaptor::pack<T>()(o, v.y);
+            msgpack::adaptor::pack<T>()(o, v.z);
+            msgpack::adaptor::pack<T>()(o, v.w);
+            return o;
+        }
+    };
+
+    template <typename T>
+    struct convert<glm::tvec4<T>> {
+        msgpack::object const &operator()(msgpack::object const &o,
+                                          glm::tvec4<T> &v) const {
+            if (o.type == msgpack::type::ARRAY) {
+                if (o.via.array.size == 4) {
+                    if (o.via.array.ptr[0].type == msgpack::type::FLOAT32 ||
+                        o.via.array.ptr[0].type == msgpack::type::FLOAT64) {
+                        v = glm::tvec4<T>(o.via.array.ptr[0].as<float>(),
+                                          o.via.array.ptr[1].as<float>(),
+                                          o.via.array.ptr[2].as<float>(),
+                                          o.via.array.ptr[3].as<float>());
+                    } else if (o.via.array.ptr[0].type ==
+                                   msgpack::type::POSITIVE_INTEGER ||
+                               o.via.array.ptr[0].type ==
+                                   msgpack::type::NEGATIVE_INTEGER) {
+                        v = glm::tvec4<T>(o.via.array.ptr[0].as<int>(),
+                                          o.via.array.ptr[1].as<int>(),
+                                          o.via.array.ptr[2].as<int>(),
+                                          o.via.array.ptr[3].as<int>());
+                    } else if (o.via.array.ptr[0].type ==
+                               msgpack::type::BOOLEAN) {
+                        v = glm::tvec4<T>(o.via.array.ptr[0].as<bool>(),
+                                          o.via.array.ptr[1].as<bool>(),
+                                          o.via.array.ptr[2].as<bool>(),
+                                          o.via.array.ptr[3].as<bool>());
+                    } else {
+                        throw msgpack::type_error();
+                    }
+                }
+            } else if (o.type == msgpack::type::FLOAT32 ||
+                       o.type == msgpack::type::FLOAT64) {
+                v = glm::tvec4<T>(o.as<float>());
+            } else if (o.type == msgpack::type::POSITIVE_INTEGER ||
+                       o.type == msgpack::type::NEGATIVE_INTEGER) {
+                v = glm::tvec4<T>(o.as<int>());
+            } else if (o.type == msgpack::type::BOOLEAN) {
+                v = glm::tvec4<T>(o.as<bool>());
+            } else {
+                throw msgpack::type_error();
+            }
+
+            return o;
+        }
+    };
+
     template <>
     struct pack<uniform_variant> {
         template <typename Stream>

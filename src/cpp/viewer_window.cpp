@@ -196,35 +196,15 @@ void viewer_window::run() {
         gl_state_->context.state().get<iTime>() = t;
         gl_state_->context.state().get<iFrame>() = state_->frame_count;
 
+        // Update model, view and projection matrices
+        gl_state_->extra_inputs.get<mModel>() = state_->get_model();
+        gl_state_->extra_inputs.get<mView>() = state_->get_view();
         // Projection matrix display range : 0.1 unit <-> 100 units
-        glm::mat4 Projection =
+        gl_state_->extra_inputs.get<mProj>() =
             glm::perspective(glm::radians(25.0f),
                              (float)gl_state_->render_size.width /
                                  (float)gl_state_->render_size.height,
                              0.1f, 100.0f);
-
-        // Camera matrix
-        glm::mat4 View = glm::lookAt(glm::vec3(5, 2, 0),  // Location
-                                     glm::vec3(0, 0, 0),  // Target
-                                     glm::vec3(0, 1, 0)   // Up
-        );
-
-        // Model matrix
-        auto Model = glm::scale(glm::mat4(1.f), glm::vec3(state_->scale));
-        // Y rotation
-        Model = glm::rotate(Model, state_->get_rotation_y(),
-                            glm::vec3(0.f, 1.f, 0.f));
-        // X rotation
-        Model = glm::rotate(Model, state_->get_rotation_x(),
-                            glm::vec3(1.f, 0.f, 0.f));
-
-        // Center model at origin
-        Model = glm::translate(Model, -state_->center);
-
-        // Our ModelViewProjection : multiplication of our 3 matrices
-        gl_state_->extra_inputs.get<mModel>() = Model;
-        gl_state_->extra_inputs.get<mView>() = View;
-        gl_state_->extra_inputs.get<mProj>() = Projection;
 
         // Note that if rotation is enabled we need to render every frame
         need_render_ |= state_->rotate_camera;
@@ -239,7 +219,8 @@ void viewer_window::run() {
 
         // Poll server instance for requests
         if (server_) {
-            need_render_ |= server_->poll(*gl_state_, viewed_revision_);
+            need_render_ |=
+                server_->poll(*state_, *gl_state_, viewed_revision_);
         }
 
         // Render ImGui overlay

@@ -91,4 +91,72 @@ function setparam(connection::Connection, param::AbstractString, value)
         error("setparam failed: " * details)
     end
 end
+
+function getcamera(connection::Connection)
+    # Send getcamera request
+    msg = ZMQ.Message("getcamera")
+    ZMQ.send(connection.socket, msg)
+
+    # Get result
+    (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if success
+        details
+    else
+        error("getcamera failed: " * details)
+    end
+end
+
+function setcamera(connection::Connection, location, target, up)
+    # Send setcamera request
+    msg = ZMQ.Message("setcamera")
+    ZMQ.send(connection.socket, msg; more=true)
+
+    # Send argument
+    msg = ZMQ.Message(MsgPack.pack((location, target, up)))
+    ZMQ.send(connection.socket, msg)
+
+    # Fetch response
+    response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if response isa Bool
+    else
+        (success, details) = response
+        error("setcamera failed: " * details)
+    end
+end
+
+function getrotation(connection::Connection)
+    # Send getrotation request
+    msg = ZMQ.Message("getrotation")
+    ZMQ.send(connection.socket, msg)
+
+    # Get result
+    (success, details) = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if success
+        details
+    else
+        error("getrotation failed: " * details)
+    end
+end
+
+function setrotation(connection::Connection, rotation)
+    # Send setrotation request
+    msg = ZMQ.Message("setrotation")
+    ZMQ.send(connection.socket, msg; more=true)
+
+    # Send argument
+    msg = ZMQ.Message(MsgPack.pack(rotation))
+    ZMQ.send(connection.socket, msg)
+
+    # Fetch response
+    response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if response isa Bool
+    else
+        (success, details) = response
+        error("setrotation failed: " * details)
+    end
+end
 end

@@ -83,6 +83,10 @@ getframe(mvw::AbstractMvw, args...; kwargs...) = RPC.getframe(connok(mvw), args.
 getparams(mvw::AbstractMvw, args...; kwargs...) = RPC.getparams(connok(mvw), args...; kwargs...)
 getparam(mvw::AbstractMvw, args...; kwargs...) = RPC.getparam(connok(mvw), args...; kwargs...)
 setparam(mvw::AbstractMvw, args...; kwargs...) = RPC.setparam(connok(mvw), args...; kwargs...)
+getcamera(mvw::AbstractMvw, args...; kwargs...) = RPC.getcamera(connok(mvw), args...; kwargs...)
+setcamera(mvw::AbstractMvw, args...; kwargs...) = RPC.setcamera(connok(mvw), args...; kwargs...)
+getrotation(mvw::AbstractMvw, args...; kwargs...) = RPC.getrotation(connok(mvw), args...; kwargs...)
+setrotation(mvw::AbstractMvw, args...; kwargs...) = RPC.setrotation(connok(mvw), args...; kwargs...)
 
-export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam
+export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam, getcamera, setcamera, getrotation, setrotation
 end # module

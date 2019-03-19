@@ -3,7 +3,7 @@
 
 #include <shadertoy/utils/log.hpp>
 
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include "config.hpp"
 #include "log.hpp"
@@ -12,8 +12,7 @@ struct viewer_state {
     bool draw_wireframe;
     bool draw_quad;
     bool rotate_camera;
-    float user_rotate_x;
-    float user_rotate_y;
+    glm::vec2 user_rotate;
     double pressed_pos_x;
     double pressed_pos_y;
     double current_pos_x;
@@ -23,17 +22,21 @@ struct viewer_state {
     glm::vec3 center;
     float scale;
 
+    glm::vec3 camera_location;
+    glm::vec3 camera_target;
+    glm::vec3 camera_up;
+
     viewer_state();
 
     void update_rotation(bool previous_rotate);
 
-    float get_rotation_x();
-
-    float get_rotation_y();
-
-    float get_rotation_y(int frame_factor);
+    glm::vec2 get_rotation(int frame_factor) const;
 
     void apply_mouse_rotation();
+
+    glm::mat4 get_model() const;
+
+    glm::mat4 get_view() const;
 };
 
 #endif /* _VIEWER_STATE_HPP_ */

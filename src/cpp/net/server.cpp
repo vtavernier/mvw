@@ -6,6 +6,7 @@
 
 #include "gl_state.hpp"
 #include "log.hpp"
+#include "viewer_state.hpp"
 
 #include "detail/rsize.hpp"
 #include "net/server.hpp"
@@ -23,6 +24,13 @@ typedef std::string getparam_args;
 typedef msgpack::type::tuple<bool, discovered_uniform> getparam_reply;
 typedef msgpack::type::tuple<std::string, uniform_variant> setparam_args;
 typedef bool setparam_reply;
+typedef msgpack::type::tuple<bool, glm::vec3, glm::vec3, glm::vec3>
+    getcamera_reply;
+typedef msgpack::type::tuple<glm::vec3, glm::vec3, glm::vec3> setcamera_args;
+typedef bool setcamera_reply;
+typedef msgpack::type::tuple<bool, glm::vec2> getrotation_reply;
+typedef glm::vec2 setrotation_args;
+typedef bool setrotation_reply;
 
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
@@ -232,6 +240,8 @@ void server::handle_setparam(gl_state &gl_state, int revision,
             // Send success response
             net::setparam_reply result(true);
             impl_->send(result);
+
+            changed_state = true;
         } else {
             // Send failure response
             net::default_reply result(
@@ -241,12 +251,69 @@ void server::handle_setparam(gl_state &gl_state, int revision,
     }
 }
 
+void server::handle_getcamera(viewer_state &state) const {
+    // Nothing to do, just send the camera parameters
+    getcamera_reply result(true, state.camera_location, state.camera_target,
+                           state.camera_up);
+    impl_->send(result);
+}
+
+void server::handle_setcamera(viewer_state &state, bool &changed_state) const {
+    setcamera_args args;
+
+    try {
+        args = impl_->recv<setcamera_args>();
+    } catch (msgpack::type_error &ex) {
+        net::default_reply result(false, "invalid camera parameters");
+        impl_->send(result);
+        return;
+    }
+
+    state.camera_location = args.get<0>();
+    state.camera_target = args.get<1>();
+    state.camera_up = args.get<2>();
+
+    changed_state = true;
+
+    setcamera_reply result(true);
+    impl_->send(result);
+}
+
+void server::handle_getrotation(viewer_state &state) const {
+    // Nothing to do, just send the rotation parameters
+    getrotation_reply result(true, state.user_rotate);
+    impl_->send(result);
+}
+
+void server::handle_setrotation(viewer_state &state,
+                                bool &changed_state) const {
+    setrotation_args args;
+
+    try {
+        args = impl_->recv<setrotation_args>();
+    } catch (msgpack::type_error &ex) {
+        net::default_reply result(false, "invalid rotation parameters");
+        impl_->send(result);
+        return;
+    }
+
+    state.user_rotate = args;
+    // Disable camera rotation if we set a manual orientation, as if
+    // the user clicked in the UI
+    state.rotate_camera = false;
+
+    changed_state = true;
+
+    setrotation_reply result(true);
+    impl_->send(result);
+}
+
 server::server(const server_options &opt)
     : opt_(opt), impl_{std::make_unique<server_impl>(opt)} {}
 
 server::~server() {}
 
-bool server::poll(gl_state &gl_state, int revision) const {
+bool server::poll(viewer_state &state, gl_state &gl_state, int revision) const {
     // true if we should stop reading messages and render the next frame
     bool next_frame = false;
     // true if we changed any render state, meaning the current frame does
@@ -302,6 +369,14 @@ bool server::poll(gl_state &gl_state, int revision) const {
                 handle_getparam(gl_state, revision);
             } else if (cmdname.compare(CMD_NAME_SETPARAM) == 0) {
                 handle_setparam(gl_state, revision, changed_state);
+            } else if (cmdname.compare(CMD_NAME_GETCAMERA) == 0) {
+                handle_getcamera(state);
+            } else if (cmdname.compare(CMD_NAME_SETCAMERA) == 0) {
+                handle_setcamera(state, changed_state);
+            } else if (cmdname.compare(CMD_NAME_GETROTATION) == 0) {
+                handle_getrotation(state);
+            } else if (cmdname.compare(CMD_NAME_SETROTATION) == 0) {
+                handle_setrotation(state, changed_state);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);
