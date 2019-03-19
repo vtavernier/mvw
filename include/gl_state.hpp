@@ -54,7 +54,7 @@ struct gl_state {
         void render(shadertoy::render_context &context,
                     geometry_inputs_t &extra_inputs, bool draw_wireframe,
                     bool draw_quad, const shadertoy::rsize &render_size,
-                    std::shared_ptr<mvw_geometry> geometry);
+                    std::shared_ptr<mvw_geometry> geometry, bool full_render);
 
        private:
         void parse_uniforms(const shader_file_program &sfp);
@@ -71,9 +71,10 @@ struct gl_state {
 
     void load_geometry(const geometry_options &geometry);
 
-    void render(bool draw_wireframe, bool draw_quad, int back_revision = 0);
+    void render(bool draw_wireframe, bool draw_quad, int back_revision = 0,
+                bool full_render = true);
 
-    void render_imgui(int back_revision = 0);
+    bool render_imgui(int back_revision = 0);
 
     void get_render_ms(float times[2], int back_revision = 0);
 

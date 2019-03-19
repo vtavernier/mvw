@@ -25,6 +25,7 @@ void viewer_window::reload_shader() {
         // Reinitialize chain
         gl_state_->load_chain(opt_.program);
         VLOG->info("Reloaded swap-chain");
+        need_render_ = true;
     } catch (shadertoy::gl::shader_compilation_error &ex) {
         VLOG->error("Failed to compile shader: {}", ex.log());
     } catch (shadertoy::gl::program_link_error &ex) {
@@ -36,7 +37,8 @@ viewer_window::viewer_window(viewer_options &&opt)
     : server_{nullptr},
       opt_{opt},
       window_render_size_(opt_.frame.width, opt_.frame.height),
-      viewed_revision_(0) {
+      viewed_revision_(0),
+      need_render_(true) {
     window_ =
         glfwCreateWindow(opt_.frame.width + window_width, opt_.frame.height,
                          "Test model viewer", nullptr, nullptr);
@@ -136,25 +138,29 @@ void viewer_window::run() {
         ImGui::Begin("mvw", NULL,
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-        ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
+        need_render_ |=
+            ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
 
-        ImGui::Checkbox("Render as quad", &state_->draw_quad);
+        need_render_ |= ImGui::Checkbox("Render as quad", &state_->draw_quad);
 
         if (ImGui::Button("Resize")) {
             gl_state_->render_size = window_render_size_;
             gl_state_->allocate_textures();
+
+            need_render_ = true;
         }
 
         bool previous_rotate = state_->rotate_camera;
         ImGui::Checkbox("Rotate model", &state_->rotate_camera);
         state_->update_rotation(previous_rotate);
 
-        ImGui::SliderInt("Revision", &viewed_revision_,
-                         -(gl_state_->chains.size() - 1), 0, "%d");
+        need_render_ |=
+            ImGui::SliderInt("Revision", &viewed_revision_,
+                             -(gl_state_->chains.size() - 1), 0, "%d");
 
         ImGui::Separator();
 
-        gl_state_->render_imgui(viewed_revision_);
+        need_render_ |= gl_state_->render_imgui(viewed_revision_);
 
         ImGui::Text("Performance");
 
@@ -220,12 +226,21 @@ void viewer_window::run() {
         gl_state_->extra_inputs.get<mView>() = View;
         gl_state_->extra_inputs.get<mProj>() = Projection;
 
+        // Note that if rotation is enabled we need to render every frame
+        need_render_ |= state_->rotate_camera;
+
         // Render current revision
         gl_state_->render(state_->draw_wireframe, state_->draw_quad,
-                          viewed_revision_);
+                          viewed_revision_, need_render_);
+
+        // We updated the rendering to the latest version
+        bool has_renderered = need_render_;
+        need_render_ = false;
 
         // Poll server instance for requests
-        if (server_) server_->poll(*gl_state_, viewed_revision_);
+        if (server_) {
+            need_render_ |= server_->poll(*gl_state_, viewed_revision_);
+        }
 
         // Render ImGui overlay
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -233,12 +248,14 @@ void viewer_window::run() {
         // Buffer swapping
         glfwSwapBuffers(window_);
 
-        // Measure time
-        float ts[2];
-        gl_state_->get_render_ms(ts, viewed_revision_);
-        runtime_acc[(runtime_acc_idx =
-                         (runtime_acc_idx + 1) % runtime_acc.size())] = ts[0];
-        runtime_p_acc[runtime_acc_idx] = ts[1];
+        if (has_renderered) {
+            // Measure time
+            float ts[2];
+            gl_state_->get_render_ms(ts, viewed_revision_);
+            runtime_acc[(runtime_acc_idx = (runtime_acc_idx + 1) %
+                                           runtime_acc.size())] = ts[0];
+            runtime_p_acc[runtime_acc_idx] = ts[1];
+        }
 
         // Update time and framecount
         t = glfwGetTime();
@@ -271,6 +288,7 @@ void viewer_window::glfw_mouse_button_callback(int button, int action,
 
 void viewer_window::glfw_set_framebuffer_size(int width, int height) {
     window_render_size_ = shadertoy::rsize(width - window_width, height);
+    need_render_ = true;
     // gl_state_->allocate_textures();
 }
 
@@ -288,6 +306,7 @@ void viewer_window::glfw_key_callback(int key, int scancode, int action,
 void viewer_window::glfw_char_callback(unsigned int codepoint) {
     if (codepoint == 'w') {
         state_->draw_wireframe = !state_->draw_wireframe;
+        need_render_ = true;
     } else if (codepoint == 'r') {
         reload_shader();
     }
@@ -300,11 +319,15 @@ void viewer_window::glfw_cursor_pos_callback(double xpos, double ypos) {
     if ((state_->pressed_buttons & (1 << GLFW_MOUSE_BUTTON_LEFT)) == 0) {
         state_->pressed_pos_x = xpos;
         state_->pressed_pos_y = ypos;
+    } else {
+        need_render_ = true;
     }
 }
 
 void viewer_window::glfw_scroll_callback(double xoffset, double yoffset) {
     state_->scale += yoffset / 4.0 * state_->scale;
+
+    need_render_ = true;
 }
 
 // Static callbacks

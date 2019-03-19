@@ -27,6 +27,8 @@ class viewer_window {
 
     int viewed_revision_;
 
+    bool need_render_;
+
     static void glfw_window_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
     static void glfw_window_set_framebuffer_size(GLFWwindow *window, int width, int height);
     static void glfw_window_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);

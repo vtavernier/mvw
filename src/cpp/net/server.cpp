@@ -246,7 +246,7 @@ server::server(const server_options &opt)
 
 server::~server() {}
 
-void server::poll(gl_state &gl_state, int revision) const {
+bool server::poll(gl_state &gl_state, int revision) const {
     // true if we should stop reading messages and render the next frame
     bool next_frame = false;
     // true if we changed any render state, meaning the current frame does
@@ -307,7 +307,11 @@ void server::poll(gl_state &gl_state, int revision) const {
                 impl_->send(result);
             }
         } else {
-            next_frame = true;
+            break;
         }
     }
+
+    // We need a new render if we either changed state or actually need a new
+    // frame
+    return next_frame || changed_state;
 }

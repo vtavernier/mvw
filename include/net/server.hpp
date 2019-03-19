@@ -32,7 +32,7 @@ class server {
     // non-trivial destructor because of pimpl
     ~server();
 
-    void poll(gl_state &gl_state, int revision) const;
+    bool poll(gl_state &gl_state, int revision) const;
 };
 }  // namespace net
 

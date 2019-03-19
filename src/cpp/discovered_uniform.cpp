@@ -97,75 +97,88 @@ struct single_value {};
 
 template <>
 struct single_value<float> {
-    void operator()(float vmin, float vmax, float &vx, float vpw,
+    bool operator()(float vmin, float vmax, float &vx, float vpw,
                     const std::string &label, const std::string &format,
                     bool angle) {
         if (angle) {
-            ImGui::SliderAngle(label.c_str(), &vx, vmin, vmax, format.c_str());
+            return ImGui::SliderAngle(label.c_str(), &vx, vmin, vmax,
+                                      format.c_str());
         } else {
-            ImGui::SliderFloat(label.c_str(), &vx, vmin, vmax, format.c_str(),
-                               vpw);
+            return ImGui::SliderFloat(label.c_str(), &vx, vmin, vmax,
+                                      format.c_str(), vpw);
         }
     }
 };
 
 template <>
 struct single_value<int> {
-    void operator()(int vmin, int vmax, int &vx, int _vpw,
+    bool operator()(int vmin, int vmax, int &vx, int _vpw,
                     const std::string &label, const std::string &format,
                     bool _angle) {
-        ImGui::SliderInt(label.c_str(), &vx, vmin, vmax, format.c_str());
+        return ImGui::SliderInt(label.c_str(), &vx, vmin, vmax, format.c_str());
     }
 };
 
 template <>
 struct single_value<bool> {
-    void operator()(bool _vmin, bool _vmax, bool &vx, bool _vpw,
+    bool operator()(bool _vmin, bool _vmax, bool &vx, bool _vpw,
                     const std::string &label, const std::string &format,
                     bool _angle) {
-        ImGui::Checkbox(label.c_str(), &vx);
+        return ImGui::Checkbox(label.c_str(), &vx);
     }
 };
 
 template <typename T>
 struct vec2_value {
-    void operator()(glm::tvec2<T> vmin, glm::tvec2<T> vmax, glm::tvec2<T> &vx,
+    bool operator()(glm::tvec2<T> vmin, glm::tvec2<T> vmax, glm::tvec2<T> &vx,
                     glm::tvec2<T> vpw, const std::string &label,
                     const std::string &format, bool angle) {
-        single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x", format,
-                          angle);
-        single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y", format,
-                          angle);
+        bool changed = false;
+
+        changed |= single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x",
+                                     format, angle);
+        changed |= single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y",
+                                     format, angle);
+
+        return changed;
     }
 };
 
 template <typename T>
 struct vec3_value {
-    void operator()(glm::tvec3<T> vmin, glm::tvec3<T> vmax, glm::tvec3<T> &vx,
+    bool operator()(glm::tvec3<T> vmin, glm::tvec3<T> vmax, glm::tvec3<T> &vx,
                     glm::tvec3<T> vpw, const std::string &label,
                     const std::string &format, bool angle) {
-        single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x", format,
-                          angle);
-        single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y", format,
-                          angle);
-        single_value<T>{}(vmin.z, vmax.z, vx.z, vpw.z, label + ".z", format,
-                          angle);
+        bool changed = false;
+
+        changed |= single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x",
+                                     format, angle);
+        changed |= single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y",
+                                     format, angle);
+        changed |= single_value<T>{}(vmin.z, vmax.z, vx.z, vpw.z, label + ".z",
+                                     format, angle);
+
+        return changed;
     }
 };
 
 template <typename T>
 struct vec4_value {
-    void operator()(glm::tvec4<T> vmin, glm::tvec4<T> vmax, glm::tvec4<T> &vx,
+    bool operator()(glm::tvec4<T> vmin, glm::tvec4<T> vmax, glm::tvec4<T> &vx,
                     glm::tvec4<T> vpw, const std::string &label,
                     const std::string &format, bool angle) {
-        single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x", format,
-                          angle);
-        single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y", format,
-                          angle);
-        single_value<T>{}(vmin.z, vmax.z, vx.z, vpw.z, label + ".z", format,
-                          angle);
-        single_value<T>{}(vmin.w, vmax.w, vx.w, vpw.w, label + ".w", format,
-                          angle);
+        bool changed = false;
+
+        changed |= single_value<T>{}(vmin.x, vmax.x, vx.x, vpw.x, label + ".x",
+                                     format, angle);
+        changed |= single_value<T>{}(vmin.y, vmax.y, vx.y, vpw.y, label + ".y",
+                                     format, angle);
+        changed |= single_value<T>{}(vmin.z, vmax.z, vx.z, vpw.z, label + ".z",
+                                     format, angle);
+        changed |= single_value<T>{}(vmin.w, vmax.w, vx.w, vpw.w, label + ".w",
+                                     format, angle);
+
+        return changed;
     }
 };
 
@@ -199,8 +212,8 @@ class imgui_render_visitor {
 
    public:
     template <typename T>
-    void operator()(T &value) const {
-        typename vec_dispatch<T>::target_type{}(
+    bool operator()(T &value) const {
+        return typename vec_dispatch<T>::target_type{}(
             std::get<T>(uniform_.s_min), std::get<T>(uniform_.s_max), value,
             std::get<T>(uniform_.s_pow), uniform_.s_username, uniform_.s_fmt,
             uniform_.s_angle);
@@ -232,8 +245,8 @@ void discovered_uniform::create_uniform(parsed_inputs_t &inputs) {
     std::visit(uniform_create_visitor{s_name, inputs}, value);
 }
 
-void discovered_uniform::render_imgui() {
-    std::visit(imgui_render_visitor{*this}, value);
+bool discovered_uniform::render_imgui() {
+    return std::visit(imgui_render_visitor{*this}, value);
 }
 
 discovered_uniform discovered_uniform::parse_spec(

@@ -42,7 +42,7 @@ struct discovered_uniform {
 
     void create_uniform(parsed_inputs_t &inputs);
 
-    void render_imgui();
+    bool render_imgui();
 
     static discovered_uniform parse_spec(
         const std::string &l_min, const std::string &l_max,

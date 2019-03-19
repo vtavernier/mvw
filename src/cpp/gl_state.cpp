@@ -229,7 +229,8 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       geometry_inputs_t &extra_inputs,
                                       bool draw_wireframe, bool draw_quad,
                                       const shadertoy::rsize &render_size,
-                                      std::shared_ptr<mvw_geometry> geometry) {
+                                      std::shared_ptr<mvw_geometry> geometry,
+                                      bool full_render) {
     // Set the geometry reference
     geometry_buffer->geometry(geometry);
 
@@ -244,7 +245,13 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
 
     // First call: draw the shaded geometry
     // Render the swap chain
-    context.render(chain);
+    if (full_render) {
+        chain.render(context);
+    } else {
+        // Render result is already ok, just render the current texture to the
+        // screen
+        chain.render(context, chain.members().back(), chain.members().back());
+    }
 
     if (draw_wireframe) {
         // Copy the gl_buffer depth data onto the back left fb
@@ -305,14 +312,16 @@ void gl_state::chain_instance::compile_shader_source(
     }
 }
 
-void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision) {
+void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision,
+                      bool full_render) {
     chains.at(chains.size() + back_revision - 1)
         ->render(context, extra_inputs, draw_wireframe, draw_quad, render_size,
-                 geometry_);
+                 geometry_, full_render);
 }
 
-void gl_state::render_imgui(int back_revision) {
+bool gl_state::render_imgui(int back_revision) {
     auto &chain = chains.at(chains.size() + back_revision - 1);
+    bool changed = false;
 
     // Group by category
     std::map<std::string, std::vector<discovered_uniform *>> uniform_categories;
@@ -331,12 +340,14 @@ void gl_state::render_imgui(int back_revision) {
         ImGui::Text("%s", it->first.c_str());
 
         for (auto &uniform : it->second) {
-            uniform->render_imgui();
+            changed |= uniform->render_imgui();
             uniform->set_uniform(chain->parsed_inputs);
         }
 
         ImGui::Separator();
     }
+
+    return changed;
 }
 
 void gl_state::get_render_ms(float times[2], int back_revision) {
