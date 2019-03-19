@@ -31,6 +31,8 @@ typedef bool setcamera_reply;
 typedef msgpack::type::tuple<bool, glm::vec2> getrotation_reply;
 typedef glm::vec2 setrotation_args;
 typedef bool setrotation_reply;
+typedef msgpack::type::tuple<bool, std::string> geometry_args; // 0 is true if NFF format
+typedef bool geometry_reply;
 
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
@@ -308,6 +310,38 @@ void server::handle_setrotation(viewer_state &state,
     impl_->send(result);
 }
 
+void server::handle_geometry(gl_state &gl_state, bool &changed_state) const
+{
+    geometry_args args;
+
+    try {
+        args = impl_->recv<geometry_args>();
+    } catch (msgpack::type_error &ex) {
+        net::default_reply result(false, std::string("invalid argument for geometry"));
+        impl_->send(result);
+        return;
+    }
+
+    geometry_options opts;
+    if (args.get<0>())
+        opts.nff_source = args.get<1>();
+    else
+        opts.path = args.get<1>();
+
+    try {
+        gl_state.load_geometry(opts);
+    } catch (std::runtime_error &ex) {
+        net::default_reply result(false, std::string("could not load geometry: ") + std::string(ex.what()));
+        impl_->send(result);
+        return;
+    }
+
+    changed_state = true;
+
+    net::geometry_reply result(true);
+    impl_->send(result);
+}
+
 server::server(const server_options &opt)
     : opt_(opt), impl_{std::make_unique<server_impl>(opt)} {}
 
@@ -377,6 +411,8 @@ bool server::poll(viewer_state &state, gl_state &gl_state, int revision) const {
                 handle_getrotation(state);
             } else if (cmdname.compare(CMD_NAME_SETROTATION) == 0) {
                 handle_setrotation(state, changed_state);
+            } else if (cmdname.compare(CMD_NAME_GEOMETRY) == 0) {
+                handle_geometry(gl_state, changed_state);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);

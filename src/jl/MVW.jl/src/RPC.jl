@@ -159,4 +159,23 @@ function setrotation(connection::Connection, rotation)
         error("setrotation failed: " * details)
     end
 end
+
+function geometry(connection::Connection, is_nff_source::Bool, source::AbstractString)
+    # Send geometry request
+    msg = ZMQ.Message("geometry")
+    ZMQ.send(connection.socket, msg; more=true)
+
+    # Send argument
+    msg = ZMQ.Message(MsgPack.pack((is_nff_source, source)))
+    ZMQ.send(connection.socket, msg)
+
+    # Fetch response
+    response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if response isa Bool
+    else
+        (success, details) = response
+        error("geometry failed: " * details)
+    end
+end
 end

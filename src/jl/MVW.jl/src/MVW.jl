@@ -87,6 +87,7 @@ getcamera(mvw::AbstractMvw, args...; kwargs...) = RPC.getcamera(connok(mvw), arg
 setcamera(mvw::AbstractMvw, args...; kwargs...) = RPC.setcamera(connok(mvw), args...; kwargs...)
 getrotation(mvw::AbstractMvw, args...; kwargs...) = RPC.getrotation(connok(mvw), args...; kwargs...)
 setrotation(mvw::AbstractMvw, args...; kwargs...) = RPC.setrotation(connok(mvw), args...; kwargs...)
+geometry(mvw::AbstractMvw, args...; kwargs...) = RPC.geometry(connok(mvw), args...; kwargs...)
 
-export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam, getcamera, setcamera, getrotation, setrotation
+export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam, getcamera, setcamera, getrotation, setrotation, geometry
 end # module
