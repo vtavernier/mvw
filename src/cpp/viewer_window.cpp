@@ -287,9 +287,16 @@ void viewer_window::glfw_mouse_button_callback(int button, int action,
 }
 
 void viewer_window::glfw_set_framebuffer_size(int width, int height) {
+    bool match_size = window_render_size_ == gl_state_->render_size;
+
     window_render_size_ = shadertoy::rsize(width - window_width, height);
+
+    if (match_size) {
+        gl_state_->render_size = window_render_size_;
+        gl_state_->allocate_textures();
+    }
+
     need_render_ = true;
-    // gl_state_->allocate_textures();
 }
 
 void viewer_window::glfw_key_callback(int key, int scancode, int action,
