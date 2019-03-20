@@ -92,7 +92,7 @@ viewer_window::viewer_window(viewer_options &&opt)
 
     // Start server
     if (!opt_.server.bind_addr.empty())
-        server_ = std::make_unique<net::server>(opt_.server);
+        server_ = std::make_unique<net::server>(opt_.server, opt_.log);
 }
 
 viewer_window::~viewer_window() {

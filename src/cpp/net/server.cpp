@@ -49,12 +49,13 @@ class server_impl {
     std::shared_ptr<spdlog::logger> logger;
     std::optional<getframe_args> getframe_pending;
 
-    server_impl(const server_options &opt)
+    server_impl(const server_options &opt, const log_options &log_opt)
         : context(),
           socket(context, ZMQ_REP),
           logger(spdlog::stderr_color_st("server")),
           getframe_pending{} {
-        logger->set_level(spdlog::level::info);
+        logger->set_level(log_opt.debug ? spdlog::level::debug :
+                          (log_opt.verbose ? spdlog::level::info : spdlog::level::warn));
 
         logger->info("Binding to {}", opt.bind_addr);
         socket.bind(opt.bind_addr);
@@ -372,8 +373,8 @@ void server::handle_geometry(gl_state &gl_state, viewer_state &state, bool &chan
     impl_->send(result);
 }
 
-server::server(const server_options &opt)
-    : opt_(opt), impl_{std::make_unique<server_impl>(opt)} {}
+server::server(const server_options &opt, const log_options &log_opt)
+    : opt_(opt), impl_{std::make_unique<server_impl>(opt, log_opt)} {}
 
 server::~server() {}
 

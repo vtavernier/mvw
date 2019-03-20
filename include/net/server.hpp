@@ -50,7 +50,7 @@ class server {
     void handle_geometry(gl_state &gl_state, viewer_state &state, bool &changed_state) const;
 
    public:
-    server(const server_options &opt);
+    server(const server_options &opt, const log_options &log_opt);
     // non-trivial destructor because of pimpl
     ~server();
 
