@@ -58,8 +58,8 @@ function spawn(base::AbstractString, command)
     end
 end
 
-function spawn(fn, command)
-    spawned = spawn(command)
+function spawn(fn, base::AbstractString, command)
+    spawned = spawn(base, command)
     try
         fn(spawned)
     finally
