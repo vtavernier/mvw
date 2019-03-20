@@ -138,6 +138,19 @@ void viewer_window::run() {
         ImGui::Begin("mvw", NULL,
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+        ImGui::Text("Camera settings");
+
+        need_render_ |= ImGui::InputFloat3("Location", &state_->camera_location.x);
+        need_render_ |= ImGui::InputFloat3("Target", &state_->camera_target.x);
+        need_render_ |= ImGui::InputFloat3("Up", &state_->camera_up.x);
+
+        need_render_ |= ImGui::InputFloat2("Rotation", &state_->user_rotate.x);
+        need_render_ |= ImGui::InputFloat("Scale", &state_->scale);
+
+        ImGui::Separator();
+
+        ImGui::Text("Render settings");
+
         need_render_ |=
             ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
 
