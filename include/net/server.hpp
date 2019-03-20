@@ -47,7 +47,7 @@ class server {
 
     void handle_setscale(viewer_state &state, bool &changed_state) const;
 
-    void handle_geometry(gl_state &gl_state, bool &changed_state) const;
+    void handle_geometry(gl_state &gl_state, viewer_state &state, bool &changed_state) const;
 
    public:
     server(const server_options &opt);

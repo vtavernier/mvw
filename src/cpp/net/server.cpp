@@ -338,7 +338,7 @@ void server::handle_setscale(viewer_state &state, bool &changed_state) const {
     impl_->send(result);
 }
 
-void server::handle_geometry(gl_state &gl_state, bool &changed_state) const
+void server::handle_geometry(gl_state &gl_state, viewer_state &state, bool &changed_state) const
 {
     geometry_args args;
 
@@ -358,6 +358,8 @@ void server::handle_geometry(gl_state &gl_state, bool &changed_state) const
 
     try {
         gl_state.load_geometry(opts);
+        state.center = gl_state.center;
+        state.scale = gl_state.scale;
     } catch (std::runtime_error &ex) {
         net::default_reply result(false, std::string("could not load geometry: ") + std::string(ex.what()));
         impl_->send(result);
@@ -444,7 +446,7 @@ bool server::poll(viewer_state &state, gl_state &gl_state, int revision) const {
             } else if (cmdname.compare(CMD_NAME_SETSCALE) == 0) {
                 handle_setscale(state, changed_state);
             } else if (cmdname.compare(CMD_NAME_GEOMETRY) == 0) {
-                handle_geometry(gl_state, changed_state);
+                handle_geometry(gl_state, state, changed_state);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);
