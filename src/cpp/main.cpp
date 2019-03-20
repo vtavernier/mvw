@@ -52,7 +52,9 @@ int main(int argc, char *argv[]) {
         /* log options */
         ("debug,d", po::bool_switch(&opt.log.debug)->default_value(false), "Enable debug logs")
         ("verbose,v", po::bool_switch(&opt.log.verbose)->default_value(false), "Enable verbose logs")
-        /*  misc */
+        /* viewer options */
+        ("headless,q", po::bool_switch(&opt.headless_mode)->default_value(false), "Headless renderer mode")
+        /* misc */
         ("help,h", "Show this help message");
     // clang-format on
 

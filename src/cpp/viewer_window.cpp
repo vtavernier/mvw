@@ -39,6 +39,11 @@ viewer_window::viewer_window(viewer_options &&opt)
       window_render_size_(opt_.frame.width, opt_.frame.height),
       viewed_revision_(0),
       need_render_(true) {
+
+    // Hide windows in headless mode
+    if (opt_.headless_mode)
+        glfwWindowHint(GLFW_VISIBLE, 0);
+
     window_ =
         glfwCreateWindow(opt_.frame.width + window_width, opt_.frame.height,
                          "Test model viewer", nullptr, nullptr);

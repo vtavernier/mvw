@@ -64,6 +64,7 @@ struct viewer_options {
     frame_options frame;
     server_options server;
     log_options log;
+    bool headless_mode;
 };
 
 #endif /* _OPTIONS_HPP_ */
