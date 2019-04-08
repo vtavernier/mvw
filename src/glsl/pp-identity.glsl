@@ -1,3 +1,5 @@
+uniform bool dQuad;
+
 void mainImage(out vec4 O, in vec2 U)
 {
     O = texture(iChannel0, U / iResolution.xy);

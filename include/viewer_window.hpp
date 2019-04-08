@@ -5,7 +5,6 @@
 
 #include <shadertoy.hpp>
 #include "log.hpp"
-#include "uniforms.hpp"
 #include "viewer_state.hpp"
 
 #include "mvw/mvw_geometry.hpp"

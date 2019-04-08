@@ -64,34 +64,6 @@ uniform_variant parse_variantN(const std::string &l) {
     return uniform_variant{value};
 }
 
-class uniform_setter_visitor {
-    const std::string &name_;
-    parsed_inputs_t &inputs_;
-
-   public:
-    template <typename T>
-    inline void operator()(T &value) const {
-        inputs_.get<iMvwParsedUniforms>().get<T>(name_) = value;
-    };
-
-    uniform_setter_visitor(const std::string &name, parsed_inputs_t &inputs)
-        : name_(name), inputs_(inputs) {}
-};
-
-class uniform_create_visitor {
-    const std::string &name_;
-    parsed_inputs_t &inputs_;
-
-   public:
-    template <typename T>
-    inline void operator()(T &value) const {
-        inputs_.get<iMvwParsedUniforms>().insert<T>(name_, value);
-    };
-
-    uniform_create_visitor(const std::string &name, parsed_inputs_t &inputs)
-        : name_(name), inputs_(inputs) {}
-};
-
 template <typename T>
 struct single_value {};
 
@@ -382,14 +354,6 @@ discovered_uniform::discovered_uniform(
       s_name(s_name),
       s_username(s_username),
       s_mode(s_mode) {}
-
-void discovered_uniform::set_uniform(parsed_inputs_t &inputs) {
-    std::visit(uniform_setter_visitor{s_name, inputs}, value);
-}
-
-void discovered_uniform::create_uniform(parsed_inputs_t &inputs) {
-    std::visit(uniform_create_visitor{s_name, inputs}, value);
-}
 
 bool discovered_uniform::render_imgui() {
     return std::visit(imgui_render_visitor{*this}, value);

@@ -17,6 +17,7 @@
 
 #include "config.hpp"
 #include "gl_state.hpp"
+#include "viewer_state.hpp"
 
 #include "options.hpp"
 
@@ -25,13 +26,6 @@ using shadertoy::gl::gl_call;
 
 gl_state::gl_state(const frame_options &opt)
     : g_buffer_template_(std::make_shared<compiler::program_template>()) {
-    // Register the custom inputs with the buffer template
-    context.buffer_template().shader_inputs().emplace("geometry",
-                                                      &extra_inputs);
-
-    // Recompile the buffer template
-    context.buffer_template().compile(GL_VERTEX_SHADER);
-
     // The default vertex shader is not sufficient, we replace it with our own
 
     // Add LIBSHADERTOY definition
@@ -41,8 +35,6 @@ gl_state::gl_state(const frame_options &opt)
 
     // Add uniform definitions
     g_buffer_template_->shader_defines().emplace("glsl", preprocessor_defines);
-    g_buffer_template_->shader_inputs().emplace("shadertoy", &context.state());
-    g_buffer_template_->shader_inputs().emplace("geometry", &extra_inputs);
 
     // Load customized shader templates
     g_buffer_template_->emplace(
@@ -59,8 +51,6 @@ gl_state::gl_state(const frame_options &opt)
 
     // Set the context parameters (render size and some uniforms)
     render_size = rsize(opt.width, opt.height);
-    context.state().get<iTimeDelta>() = 1.0 / 60.0;
-    context.state().get<iFrameRate>() = 60.0;
 }
 
 gl_state::chain_instance::chain_instance(
@@ -69,11 +59,6 @@ gl_state::chain_instance::chain_instance(
     rsize &render_size)
     : opt(opt) {
     bool has_postprocess = !opt.postprocess.empty();
-
-    // There is some shared state in the template here, but it's the simplest
-    g_buffer_template->shader_inputs()["parsed"] = &parsed_inputs;
-    context.buffer_template().shader_inputs()["parsed"] = &parsed_inputs;
-
     // Compile shaders
     opt.shader.invoke(
         [this](const auto &path) {
@@ -91,12 +76,6 @@ gl_state::chain_instance::chain_instance(
     // Parse uniforms from source
     parse_uniforms(opt.shader);
     parse_uniforms(opt.postprocess);
-
-    // Apply the defaults to define the uniforms before the template is
-    // generated
-    for (auto &uniform : discovered_uniforms) {
-        uniform.create_uniform(parsed_inputs);
-    }
 
     // Create the geometry buffer
     geometry_buffer = std::make_shared<mvw_buffer>("geometry");
@@ -187,6 +166,10 @@ gl_state::chain_instance::chain_instance(
 
     context.init(geometry_chain);
     VLOG->info("Initialized geometry-only swap chain");
+
+    // Set framerate uniforms
+    set_uniform("iTimeDelta", 1.0f / 60.0f);
+    set_uniform("iFrameRate", 60.0f);
 }
 
 void gl_state::load_chain(const shader_program_options &opt) {
@@ -216,7 +199,6 @@ void gl_state::load_geometry(const geometry_options &geometry) {
     if (geometry_) {
         // Compute model scale, update state
         //  Fetch dimensions of model
-        glm::vec3 bbox_min, bbox_max;
         geometry_->get_dimensions(bbox_min, bbox_max);
         glm::dvec3 centroid = geometry_->get_centroid();
 
@@ -227,14 +209,10 @@ void gl_state::load_geometry(const geometry_options &geometry) {
         VLOG->info("Object center: {}", glm::to_string(center));
         VLOG->info("Object centroid: {}", glm::to_string(centroid));
 
-        //  Set state_
-        extra_inputs.get<bboxMax>() = bbox_max;
-        extra_inputs.get<bboxMin>() = bbox_min;
     }
 }
 
 void gl_state::chain_instance::render(shadertoy::render_context &context,
-                                      geometry_inputs_t &extra_inputs,
                                       bool draw_wireframe, bool draw_quad,
                                       const shadertoy::rsize &render_size,
                                       std::shared_ptr<mvw_geometry> geometry,
@@ -249,7 +227,7 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
 
     // Update quad rendering status
     geometry_buffer->render_quad(draw_quad);
-    extra_inputs.get<dQuad>() = draw_quad ? 1 : 0;
+    chain.set_uniform("dQuad", draw_quad ? 1 : 0);
 
     // First call: draw the shaded geometry
     // Render the swap chain
@@ -271,11 +249,13 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
                 render_size.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
         // Second call: render wireframe on top without post-processing
-        extra_inputs.get<bWireframe>() = GL_TRUE;
-        // Render swap chain
+        geometry_chain.set_uniform("dQuad", draw_quad ? 1 : 0);
+        geometry_chain.set_uniform("bWireframe", 1);
+
         context.render(geometry_chain);
-        // Restore bWireframe state
-        extra_inputs.get<bWireframe>() = GL_FALSE;
+
+        // Note that both chains share the same program, so restore the wireframe value
+        geometry_chain.set_uniform("bWireframe", 1);
     }
 }
 
@@ -323,7 +303,7 @@ void gl_state::chain_instance::compile_shader_source(
 void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision,
                       bool full_render) {
     chains.at(chains.size() + back_revision - 1)
-        ->render(context, extra_inputs, draw_wireframe, draw_quad, render_size,
+        ->render(context, draw_wireframe, draw_quad, render_size,
                  geometry_, full_render);
 }
 
@@ -349,7 +329,7 @@ bool gl_state::render_imgui(int back_revision) {
 
         for (auto &uniform : it->second) {
             changed |= uniform->render_imgui();
-            uniform->set_uniform(chain->parsed_inputs);
+            uniform->set_uniform(*chain);
         }
 
         ImGui::Separator();
@@ -420,5 +400,27 @@ void gl_state::allocate_textures() {
     for (auto &chain : chains) {
         context.allocate_textures(chain->chain);
         context.allocate_textures(chain->geometry_chain);
+    }
+}
+
+void gl_state::update_uniforms(float t, const viewer_state &state) {
+    // Update model, view and projection matrices
+    glm::mat4 mModel = state.get_model();
+    glm::mat4 mView = state.get_view();
+    // Projection matrix display range : 0.1 unit <-> 100 units
+    glm::mat4 mProj = glm::perspective(
+        glm::radians(25.0f),
+        (float)render_size.width / (float)render_size.height, 0.1f, 100.0f);
+
+    for (auto &chain : chains) {
+        chain->set_uniform("iTime", t);
+        chain->set_uniform("iFrame", state.frame_count);
+
+        chain->set_uniform("mModel", mModel);
+        chain->set_uniform("mView", mView);
+        chain->set_uniform("mProj", mProj);
+
+        chain->set_uniform("bboxMax", bbox_max);
+        chain->set_uniform("bboxMin", bbox_min);
     }
 }

@@ -1,4 +1,8 @@
+uniform bool dQuad;
+uniform bool dGrid;
+
 //! float cFilterLod min=1.0 max=8.0 fmt="%2.2f" cat="Contrast correction" unm="C. LOD" def=2.0
+uniform float cFilterLod;
 
 void mainImage(out vec4 O, in vec2 U)
 {

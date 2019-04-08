@@ -4,7 +4,6 @@
 #include <shadertoy.hpp>
 
 #include "log.hpp"
-#include "uniforms.hpp"
 
 #include "mvw/geometry.hpp"
 
@@ -14,14 +13,16 @@
 
 #include "options.hpp"
 
-struct gl_state {
-    /// Extra uniforms
-    geometry_inputs_t extra_inputs;
+class viewer_state;
 
+struct gl_state {
     /// Global rendering context for all possible chains
     shadertoy::render_context context;
     /// Target rendering size
     shadertoy::rsize render_size;
+
+    /// Bounding box details
+    glm::vec3 bbox_min, bbox_max;
 
     /// Geometry center point
     glm::vec3 center;
@@ -42,7 +43,6 @@ struct gl_state {
         std::shared_ptr<mvw_buffer> geometry_buffer;
         std::shared_ptr<shadertoy::buffers::toy_buffer> postprocess_buffer;
 
-        parsed_inputs_t parsed_inputs;
         std::vector<discovered_uniform> discovered_uniforms;
 
         chain_instance(std::shared_ptr<shadertoy::compiler::program_template>
@@ -51,10 +51,15 @@ struct gl_state {
                        shadertoy::render_context &context,
                        shadertoy::rsize &render_size);
 
-        void render(shadertoy::render_context &context,
-                    geometry_inputs_t &extra_inputs, bool draw_wireframe,
+        void render(shadertoy::render_context &context, bool draw_wireframe,
                     bool draw_quad, const shadertoy::rsize &render_size,
                     std::shared_ptr<mvw_geometry> geometry, bool full_render);
+
+        template <typename TKey, typename... Targs>
+        void set_uniform(const TKey &identifier, Targs &&... value) const {
+            chain.set_uniform(identifier, std::forward<Targs...>(value...));
+            geometry_chain.set_uniform(identifier, std::forward<Targs...>(value...));
+        }
 
        private:
         void parse_uniforms(const shader_file_program &sfp);
@@ -89,6 +94,8 @@ struct gl_state {
     bool has_postprocess(int back_revision = 0) const;
 
     void allocate_textures();
+
+    void update_uniforms(float t, const viewer_state &state);
 
    private:
     std::shared_ptr<shadertoy::compiler::program_template> g_buffer_template_;

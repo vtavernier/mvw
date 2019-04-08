@@ -9,8 +9,6 @@
 
 #include <msgpack.hpp>
 
-#include "uniforms.hpp"
-
 typedef std::variant<float, glm::vec2, glm::vec3, glm::vec4, int, glm::ivec2,
                      glm::ivec3, glm::ivec4, bool, glm::bvec2, glm::bvec3,
                      glm::bvec4>
@@ -46,9 +44,12 @@ struct discovered_uniform {
                        const std::string &s_name, const std::string &s_username,
                        uniform_mode s_mode);
 
-    void set_uniform(parsed_inputs_t &inputs);
-
-    void create_uniform(parsed_inputs_t &inputs);
+    template <typename T>
+    void set_uniform(T && chain) {
+        std::visit([this, &chain](const auto &value)
+                   { chain.set_uniform(s_name, value); },
+                   value);
+    }
 
     bool render_imgui();
 

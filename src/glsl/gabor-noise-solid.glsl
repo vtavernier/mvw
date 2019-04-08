@@ -5,6 +5,7 @@ m4_include(prng/poisson.glsl)
 m4_define(WHITE_POISSON,0)
 m4_include(pg/3d/white.glsl)
 m4_define(KTRUNC,1)
+m4_include(gabor/params.glsl)
 m4_include(gabor/kernel.glsl)
 m4_include(gabor/grid.glsl)
 

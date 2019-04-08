@@ -211,18 +211,7 @@ void viewer_window::run() {
         ImGui::Render();
 
         // Update uniforms
-        gl_state_->context.state().get<iTime>() = t;
-        gl_state_->context.state().get<iFrame>() = state_->frame_count;
-
-        // Update model, view and projection matrices
-        gl_state_->extra_inputs.get<mModel>() = state_->get_model();
-        gl_state_->extra_inputs.get<mView>() = state_->get_view();
-        // Projection matrix display range : 0.1 unit <-> 100 units
-        gl_state_->extra_inputs.get<mProj>() =
-            glm::perspective(glm::radians(25.0f),
-                             (float)gl_state_->render_size.width /
-                                 (float)gl_state_->render_size.height,
-                             0.1f, 100.0f);
+        gl_state_->update_uniforms(t, *state_);
 
         // Note that if rotation is enabled we need to render every frame
         need_render_ |= state_->rotate_camera;

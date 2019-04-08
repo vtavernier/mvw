@@ -4,7 +4,16 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-#pragma shadertoy part geometry:uniforms
+uniform mat4 mModel;
+uniform mat4 mView;
+uniform mat4 mProj;
+
+uniform bool bWireframe;
+
+uniform vec3 bboxMax;
+uniform vec3 bboxMin;
+
+uniform bool dQuad;
 
 // Vertex attributes
 layout(location = 0) in vec3 position;
