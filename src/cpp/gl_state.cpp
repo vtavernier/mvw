@@ -255,7 +255,7 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
         context.render(geometry_chain);
 
         // Note that both chains share the same program, so restore the wireframe value
-        geometry_chain.set_uniform("bWireframe", 1);
+        geometry_chain.set_uniform("bWireframe", 0);
     }
 }
 
