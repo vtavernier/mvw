@@ -1,4 +1,4 @@
-//! float gTilesize min=0.01 max=10.0 fmt="%2.3f" pow=5.0 cat="Gabor noise" unm="Tile size" def=1.0
+//! float gTilesize min=0.01 max=10.0 fmt="%2.3f" pow=5.0 cat="Gabor noise (2019)" unm="Tile size" def=1.0
 uniform float gTilesize;
 
 m4_define(GRID3D_DEFINE,`void $1(inout vec4 O, in vec3 P, in int max_disp, in vec3 tile_size, in vec3 w0) {

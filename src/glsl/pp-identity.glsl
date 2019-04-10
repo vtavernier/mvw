@@ -1,4 +1,5 @@
-uniform bool dQuad;
+m4_include(pp/params.glsl)
+m4_include(pp/lighting.glsl)
 
 void mainImage(out vec4 O, in vec2 U)
 {
@@ -7,5 +8,5 @@ void mainImage(out vec4 O, in vec2 U)
     // Show only noise value
     O.rgb = O.rrr;
 
-    if (!dQuad) O.rgb *= texture(iChannel1, U / iResolution.xy).rgb;
+    O.rgb = lighting(U, O.rgb);
 }
