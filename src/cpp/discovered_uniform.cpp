@@ -453,8 +453,8 @@ void try_parse_uniform(const std::string &line,
         regex_search(spec, match_unm, regex_varunm);
         regex_search(spec, match_mod, regex_varmod);
 
-        VLOG->info("Parsed uniform declaration for {} \"{}\" (type {})", name,
-                   match_unm.size() > 1 ? match_unm.str(1) : "", type);
+        VLOG->debug("Parsed uniform declaration for {} \"{}\" (type {})", name,
+                    match_unm.size() > 1 ? match_unm.str(1) : "", type);
 
         discovered_uniforms.emplace_back(discovered_uniform::parse_spec(
             match_min.size() > 1 ? match_min.str(1) : "0",

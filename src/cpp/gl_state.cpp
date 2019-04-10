@@ -162,10 +162,10 @@ gl_state::chain_instance::chain_instance(
 
     // Initialize context
     context.init(chain);
-    VLOG->info("Initialized main swap chain");
+    VLOG->debug("Initialized main swap chain");
 
     context.init(geometry_chain);
-    VLOG->info("Initialized geometry-only swap chain");
+    VLOG->debug("Initialized geometry-only swap chain");
 
     // Set framerate uniforms
     set_uniform("iTimeDelta", 1.0f / 60.0f);
@@ -205,10 +205,9 @@ void gl_state::load_geometry(const geometry_options &geometry) {
         glm::vec3 dimensions = bbox_max - bbox_min;
         center = (bbox_max + bbox_min) / 2.f;
         scale = 2. / dimensions.z;
-        VLOG->info("Object dimensions: {}", glm::to_string(dimensions));
-        VLOG->info("Object center: {}", glm::to_string(center));
-        VLOG->info("Object centroid: {}", glm::to_string(centroid));
-
+        VLOG->debug("Object dimensions: {}", glm::to_string(dimensions));
+        VLOG->debug("Object center: {}", glm::to_string(center));
+        VLOG->debug("Object centroid: {}", glm::to_string(centroid));
     }
 }
 
