@@ -18,16 +18,6 @@ mutable struct SpawnedMvw <: AbstractMvw
     process::Base.Process
 end
 
-# Default bind address for a remote instance of mvw
-function default_bind_addr()
-    @static if Sys.iswindows()
-        return "tcp://127.0.0.1:7178"
-    else
-        tmpdir = haskey(ENV, "TMPDIR") ? ENV["TMPDIR"] : "/tmp"
-        return "ipc://$tmpdir/mvw_default.sock"
-    end
-end
-
 import Random
 
 function random_bind_addr()
@@ -35,12 +25,12 @@ function random_bind_addr()
         return "tcp://127.0.0.1:" * string(Random.rand(32768:65535))
     else
         tmpdir = haskey(ENV, "TMPDIR") ? ENV["TMPDIR"] : "/tmp"
-        return "ipc://$tmpdir/" * Random.randstring(16)
+        return "ipc://$tmpdir/mvw_" * Random.randstring(16) * ".sock"
     end
 end
 
 # Connect to a remote instance of mvw
-function connect(target::AbstractString = default_bind_addr())
+function connect(target::AbstractString)
     RemoteMvw(RPC.connect(target))
 end
 
