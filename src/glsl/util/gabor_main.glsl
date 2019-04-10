@@ -10,17 +10,8 @@ void mainImage(out vec4 O, in vec2 U)
 
     //debugRotGrid(O, vPosition, 0, _TILE_SIZE);
 
-    // Compute prefiltering at current pixel
-    vec3 n = normalize(vNormal);
+    // Orientation at current world position
     vec3 w0 = W0VEC(gW0);
-    vec3 w0p0 = w0 - dot(w0, n) * n;
-
-    float p = dot(vPosition, w0);
-    vec2 w0p = abs(vec2(dFdx(p), dFdy(p)));
-    float w0pn = length(w0p);
-
-    vec2 wP = 2. * M_PI * gF0 * w0p;
-    float f = exp(-pow(length(w0p0) * length(wP) / aSigma, 2.) / 2.);
 
     // Grid-evaluate Gabor noise
     gaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE, w0);
@@ -30,6 +21,17 @@ void mainImage(out vec4 O, in vec2 U)
 
     // Compute variance in O.b for renorm, using mipmap
     O.b = O.r * O.r;
+
+    // Compute prefiltering at current pixel
+    vec3 n = normalize(vNormal);
+    vec3 w0p0 = w0 - dot(w0, n) * n;
+
+    float p = dot(vPosition, w0);
+    vec2 w0p = abs(vec2(dFdx(p), dFdy(p)));
+    float w0pn = length(w0p);
+
+    vec2 wP = 2. * M_PI * gF0 * w0p;
+    float f = exp(-pow(length(w0p0) * length(wP) / aSigma, 2.) / 2.);
 
     // Apply prefiltering to the noise value
     O.r *= f;
