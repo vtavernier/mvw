@@ -5,7 +5,7 @@ s = (1024, 1024)
 models = [
   (path="../models/mcguire/bunny/bunny.obj",
    location=[5, 2, 0], target=[0, 0, 0], up=[0, 1, 0],
-   rotation=[0, 100], scale=1.225, f0=95.0),
+   rotation=[0, 100], scale=1.225, f0=5.0),
   (path="../models/mcguire/dragon/dragon.obj",
    location=[5, 2, 0], target=[0, 0, 0], up=[0, 1, 0],
    rotation=[0, 0], scale=2, f0=150.0)
