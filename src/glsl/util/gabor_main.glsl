@@ -17,7 +17,7 @@ void mainImage(out vec4 O, in vec2 U)
     gaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE, w0);
 
     // Normalize output
-    O = sqrt(3.) * O / sqrt(float(gSplats));
+    O *= .5 * sqrt(3.) * 3. / (4. * sqrt((1. - exp(-2. * M_PI * gF0 * gF0 * gTilesize * gTilesize)) * float(gSplats)));
 
     // Compute variance in O.b for renorm, using mipmap
     O.b = O.r * O.r;
