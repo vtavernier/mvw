@@ -258,6 +258,9 @@ vec3 perp(in vec3 v)
 
 layout(location = 1) out vec4 fragLighting;
 
+//! float sigma_f_scr min=0.01 max=2.0 fmt="%2.3f" cat="Prefiltering" unm="Sigma" def=0.5
+uniform float sigma_f_scr;
+
 void mainImage(out vec4 O, in vec2 U)
 {
   float a = 1.0 / gTilesize;
@@ -274,7 +277,6 @@ void mainImage(out vec4 O, in vec2 U)
 
   // see Sec. 5 (Definition of the Filtering Gaussian)
   mat2 M_scr_tan = mat2(transpose(mat3(t_tex, b_tex, n_tex)) * mat2x3(dFdx(vPosition), dFdy(vPosition)));
-  float sigma_f_scr = 0.5;
   mat2 Sigma_f_scr = (sigma_f_scr * sigma_f_scr) * mat2(1.0);
   mat2 Sigma_f_tan = M_scr_tan * Sigma_f_scr * transpose(M_scr_tan);
 
@@ -287,7 +289,7 @@ void mainImage(out vec4 O, in vec2 U)
   O.b = O.r * O.r;
 
   // Return filter strength in green channel
-  O.g = 1.; // TODO
+  O.g = determinant(Sigma_f_tan);
 
   // [0, 1] range for the noise value
   O.r = .5 * O.r + .5;
