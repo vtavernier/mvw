@@ -165,7 +165,7 @@ float noise_cell(const in noise this_, const in ivec3 c, const in vec3 x_c, cons
   if (seed == 0u) seed = 1u;
   noise_prng prng;
   noise_prng_srand(prng, seed);
-  uint number_of_impulses = noise_prng_poisson(prng, this_.lambda_ * this_.r_ * this_.r_ * this_.r_);
+  uint number_of_impulses = noise_prng_poisson(prng, this_.lambda_);
   float sum = 0.0;
   for (uint i = 0u; i < number_of_impulses; ++i) {
     vec3 x_i_c = vec3(noise_prng_uniform_0_1(prng), noise_prng_uniform_0_1(prng), noise_prng_uniform_0_1(prng));
@@ -217,11 +217,6 @@ float noise_evaluate(const in noise this_, const in vec3 x, const in vec3 n, con
   return noise_grid(this_, x_g, n, t, b, filter_);
 }
 
-float noise_variance(const in noise this_)
-{
-  return (1.0 / (4.0 * sqrt(2.0) * (this_.a_ * this_.a_ * this_.a_)));
-}
-
 // -----------------------------------------------------------------------------    
 
 //! int gSplats min=1 max=30 def=3 fmt="%d" cat="Gabor noise (2019)" unm="Splats"
@@ -237,7 +232,7 @@ uniform float gTilesize;
 uniform uint seed;
 //! int type min=0 max=3 def=0 fmt="%d" cat="Gabor noise (2011)" unm="Type"
 uniform int type;
-//! bool filter_ def=false cat="Gabor noise (2011)" unm="Filter"
+//! bool filter_ def=1 cat="Gabor noise (2011)" unm="Filter"
 uniform bool filter_;
 
 vec3 perp(in vec3 v)
@@ -283,7 +278,7 @@ void mainImage(out vec4 O, in vec2 U)
   float noise = noise_evaluate(n, vPosition, n_tex, t_tex, b_tex, Sigma_f_tan);
 
   // Final noise value
-  O.r = noise / (3.0 * sqrt(noise_variance(n)));
+  O.r = noise * .5 * sqrt(3.) * 3. / (4. * sqrt((1. - exp(-2. * pi * gF0 * gF0 * gTilesize * gTilesize))));
 
   // Compute variance in O.b for renorm, using mipmap
   O.b = O.r * O.r;
