@@ -87,3 +87,6 @@ set(SHADERS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 # Define targets
 add_subdirectory(${SRC_ROOT}/cpp)
 add_subdirectory(${SRC_ROOT}/glsl)
+
+# Copy Procfile
+configure_file(Procfile.in ${CMAKE_CURRENT_BINARY_DIR}/Procfile COPYONLY)

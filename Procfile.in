@@ -1,0 +1,2 @@
+viewer: ./viewer -m -s glsl/ld11-gabor.glsl -p glsl/pp-contrast.glsl -W 1024 -H 1024 -g ../models/mcguire/bunny/bunny.obj -b ipc:///tmp/mvw_ld11.sock 
+viewer: ./viewer -m -s glsl/gabor-noise-solid.glsl -p glsl/pp-contrast.glsl -W 1024 -H 1024 -g ../models/mcguire/bunny/bunny.obj -b ipc:///tmp/mvw_2019.sock
