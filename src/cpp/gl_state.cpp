@@ -204,10 +204,22 @@ void gl_state::load_geometry(const geometry_options &geometry) {
 
         glm::vec3 dimensions = bbox_max - bbox_min;
         center = (bbox_max + bbox_min) / 2.f;
-        scale = 2. / dimensions.z;
+
+        if (geometry_->has_hint(HINT_NOSCALE)) {
+            scale = 1.;
+        } else {
+            scale = 2. / dimensions.z;
+        }
+
         VLOG->debug("Object dimensions: {}", glm::to_string(dimensions));
         VLOG->debug("Object center: {}", glm::to_string(center));
         VLOG->debug("Object centroid: {}", glm::to_string(centroid));
+
+        if (geometry_->has_hint(HINT_NOLIGHT)) {
+            for (auto &chain : chains) {
+                chain->set_uniform("dLighting", 0);
+            }
+        }
     }
 }
 

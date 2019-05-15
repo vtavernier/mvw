@@ -2,6 +2,8 @@
 
 #include "mvw/mvw_geometry.hpp"
 
+#include "log.hpp"
+
 using namespace shadertoy;
 using shadertoy::gl::gl_call;
 
@@ -50,10 +52,29 @@ void mvw_geometry::add_vertex_data(const std::vector<vertex_data> &vertices,
     meshes_.emplace_back(std::move(mesh));
 }
 
+void mvw_geometry::set_hint(const std::string &hint, hint_value value) {
+    hints_[hint] = value;
+    std::visit([&](const auto &v) {
+        VLOG->debug("Setting hint {} to {}", hint, v);
+    }, value);
+}
+
 void mvw_geometry::draw() const {
     for (const auto &mesh : meshes_) {
         auto vao_bind(gl::get_bind_guard(mesh.vao));
         gl_call(glDrawElements, GL_TRIANGLES, mesh.indices_size,
                 GL_UNSIGNED_INT, nullptr);
     }
+}
+
+bool mvw_geometry::has_hint(const std::string &hint) const {
+    return hints_.find(hint) != hints_.end();
+}
+
+std::optional<hint_value> mvw_geometry::hint_val(const std::string &hint) const {
+    auto it = hints_.find(hint);
+
+    if (it == hints_.end())
+        return std::nullopt;
+    return it->second;
 }
