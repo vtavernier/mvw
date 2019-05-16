@@ -69,6 +69,12 @@ function connok(mvw::SpawnedMvw)
     mvw.connection
 end
 
+function dorpc(f, mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...)
+    map(mvw) do item
+        f(connok(item), args...; kwargs...)
+    end
+end
+
 getframe(mvw::AbstractMvw, args...; kwargs...) = RPC.getframe(connok(mvw), args...; kwargs...)
 getparams(mvw::AbstractMvw, args...; kwargs...) = RPC.getparams(connok(mvw), args...; kwargs...)
 getparam(mvw::AbstractMvw, args...; kwargs...) = RPC.getparam(connok(mvw), args...; kwargs...)
@@ -80,6 +86,18 @@ setrotation(mvw::AbstractMvw, args...; kwargs...) = RPC.setrotation(connok(mvw),
 getscale(mvw::AbstractMvw, args...; kwargs...) = RPC.getscale(connok(mvw), args...; kwargs...)
 setscale(mvw::AbstractMvw, args...; kwargs...) = RPC.setscale(connok(mvw), args...; kwargs...)
 geometry(mvw::AbstractMvw, args...; kwargs...) = RPC.geometry(connok(mvw), args...; kwargs...)
+
+getframe(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getframe, mvw, args...; kwargs...)
+getparams(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getparams, mvw, args...; kwargs...)
+getparam(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getparam, mvw, args...; kwargs...)
+setparam(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.setparam, mvw, args...; kwargs...)
+getcamera(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getcamera, mvw, args...; kwargs...)
+setcamera(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.setcamera, mvw, args...; kwargs...)
+getrotation(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getrotation, mvw, args...; kwargs...)
+setrotation(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.setrotation, mvw, args...; kwargs...)
+getscale(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getscale, mvw, args...; kwargs...)
+setscale(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.setscale, mvw, args...; kwargs...)
+geometry(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.geometry, mvw, args...; kwargs...)
 
 export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam, getcamera, setcamera, getrotation, setrotation, getscale, setscale, geometry
 end # module
