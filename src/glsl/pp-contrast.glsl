@@ -7,6 +7,9 @@ uniform float cFilterLod;
 //! bool cAdaptiveWindow cat="Contrast correction" unm="Adaptive window" def=1
 uniform bool cAdaptiveWindow;
 
+//! bool cRenormalize cat="Contrast correction" unm="Renormalize" def=1
+uniform bool cRenormalize;
+
 void mainImage(out vec4 O, in vec2 U)
 {
     vec4 c = texture(iChannel0, U / iResolution.xy);
@@ -18,8 +21,12 @@ void mainImage(out vec4 O, in vec2 U)
         return;
     }
 
-    O = vec4(2. * (c.rrr - .5) / sqrt(fc.b), c.a);
-    O.rgb = .5 * O.rgb + .5;
+    if (cRenormalize) {
+        O = vec4(2. * (c.rrr - .5) / sqrt(fc.b), c.a);
+        O.rgb = .5 * O.rgb + .5;
+    } else {
+        O = c.rrra;
+    }
 
     // Apply lighting component
     O.rgb = lighting(U, O.rgb);

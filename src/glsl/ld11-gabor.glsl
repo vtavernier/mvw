@@ -284,7 +284,7 @@ void mainImage(out vec4 O, in vec2 U)
   O.b = O.r * O.r;
 
   // Return filter strength in green channel
-  O.g = determinant(Sigma_f_tan);
+  O.g = 1. / (2. * pi * sqrt(determinant(Sigma_f_tan)));
 
   // [0, 1] range for the noise value
   O.r = .5 * O.r + .5;
