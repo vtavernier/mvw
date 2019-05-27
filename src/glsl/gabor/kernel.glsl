@@ -20,11 +20,11 @@ float eb(float r) {
 }
 
 [% MACRO cgabor_kernel BLOCK %]
-vec3 $name($postype x, float K, float F0, $postype w0, $postype tile_size, float phase) {
-    float r = length(x);
-    float p = 2. * M_PI * F0 * dot(x * tile_size, w0) + phase;
+vec2 $name($postype x, $postype xi, float K, float F0, $postype w0, $postype tile_size, float phase) {
+    float r = length((x - xi) / tile_size);
+    float p = 2. * M_PI * F0 * dot(x - xi, w0) + phase;
 
-    return eb(r) * vec3(K * vec2(cos(p), sin(p)), p);
+    return K * eb(r) * vec2(cos(p), sin(p));
 }
 [% END %]
 

@@ -36,11 +36,10 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
         vec3 v = td_point.xyz - P;
         float d = dot(v, n);
 
-        // Compute relative location
-        td_point.xyz = (P - td_point.xyz) / _TILE_SIZE;
+        // Relative location computed by ch3
 
         // Compute contribution
-        O.rgb += ch3(td_point.xyz, 1.0, gF0, w0, _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
+        O.rg += ch3(P, td_point.xyz, 1.0, gF0, w0, _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
     }
 }
 
