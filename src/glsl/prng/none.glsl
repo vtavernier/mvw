@@ -12,4 +12,4 @@ vec2 prng_rand2(inout prng_state this_) {
     return vec2(0.);
 }
 
-m4_define(PRNG_NONE)
+[% SET prng_none = 1 %]

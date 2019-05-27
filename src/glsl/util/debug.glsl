@@ -15,5 +15,5 @@ void debugRot(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 w
     O = vec4(cos(phase), sin(phase), -1., 1.);
 }
 
-GRID3D_DEFINE(debugGrid,debugCell)
-GRID3D_DEFINE(debugRotGrid,debugRot)
+[% grid3d_define(name="debugGrid",cell="debugCell") %]
+[% grid3d_define(name="debugRotGrid",cell="debugRot") %]

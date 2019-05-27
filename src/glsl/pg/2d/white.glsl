@@ -10,8 +10,10 @@ void pg_seed(inout pg_state this_, ivec2 nc, ivec2 tile_count, int random_seed, 
 
     // The expected number of points for given splats is splats
     this_.splats = expected_splats;
+[% IF white_poisson %]
 
-    m4_ifelse(WHITE_POISSON, 1, `this_.splats = prng_poisson(this_.state, expected_splats);')
+    this_.splats = prng_poisson(this_.state, expected_splats);
+[% END %]
 }
 
 int pg_splats(in pg_state this_)

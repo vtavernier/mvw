@@ -1,11 +1,11 @@
-m4_include(core/math.glsl)
-m4_include(core/hash.glsl)
-m4_include(prng/xorshift.glsl)
-m4_include(prng/poisson.glsl)
-m4_define(WHITE_POISSON,0)
-m4_include(pg/3d/white.glsl)
-m4_include(gabor/kernel.glsl)
-m4_include(gabor/grid.glsl)
+[% PROCESS core/math.glsl %]
+[% PROCESS core/hash.glsl %]
+[% PROCESS prng/xorshift.glsl %]
+[% PROCESS prng/poisson.glsl %]
+[% SET white_poisson = 0 %]
+[% PROCESS pg/3d/white.glsl %]
+[% PROCESS gabor/kernel.glsl %]
+[% PROCESS gabor/grid.glsl %]
 
 #define W0VEC(w0) vec3(cos(w0.x)*cos(w0.y),sin(w0.x)*cos(w0.y),sin(w0.y))
 #define _TILE_SIZE vec3(gTilesize)
@@ -43,7 +43,7 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center) {
     }
 }
 
-GRID3D_DEFINE(gaborGrid,gaborCell)
+[% grid3d_define(name="gaborGrid",cell="gaborCell") %]
 
-m4_include(util/debug.glsl)
-m4_include(util/gabor_main.glsl)
+[% PROCESS util/debug.glsl %]
+[% PROCESS util/gabor_main.glsl %]

@@ -1,5 +1,5 @@
-m4_include(pp/params.glsl)
-m4_include(pp/lighting.glsl)
+[% PROCESS pp/params.glsl %]
+[% PROCESS pp/lighting.glsl %]
 
 void mainImage(out vec4 O, in vec2 U)
 {

@@ -3,7 +3,9 @@
 // TODO: fix usage with the none generator, should return int(mean + .5)
 
 int prng_poisson(inout prng_state this_, float mean) {
-    m4_ifdef(PRNG_NONE, `return int(mean + .5)')
+[% IF prng_none %]
+    return int(mean + .5);
+[% ELSE %]
     int em = 0;
 
     if (mean < 45.)
@@ -25,4 +27,5 @@ int prng_poisson(inout prng_state this_, float mean) {
     }
 
     return em;
+[% END %]
 }

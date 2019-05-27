@@ -1,5 +1,5 @@
-m4_include(pp/params.glsl)
-m4_include(pp/lighting.glsl)
+[% PROCESS pp/params.glsl %]
+[% PROCESS pp/lighting.glsl %]
 
 //! float cFilterLod min=1.0 max=8.0 fmt="%2.2f" cat="Contrast correction" unm="C. LOD" def=2.0
 uniform float cFilterLod;
