@@ -13,3 +13,6 @@
 [submodule "msgpack-c"]
 	path = msgpack-c
 	url = https://github.com/msgpack/msgpack-c.git
+[submodule "colormap-shaders"]
+	path = colormap-shaders
+	url = https://github.com/kbinani/colormap-shaders.git
