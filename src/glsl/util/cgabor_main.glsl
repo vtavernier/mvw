@@ -1,4 +1,5 @@
 layout(location = 1) out vec4 fragLighting;
+layout(location = 2) out vec4 phasorField;
 
 void mainImage(out vec4 O, in vec2 U)
 {
@@ -12,10 +13,15 @@ void mainImage(out vec4 O, in vec2 U)
     cgaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE, n);
 
     // Normalize output
-    O.rg *= 1. / sqrt(float(gSplats));
+    O *= 1. / sqrt(float(gSplats));
 
     // [0, 1] range for the noise value
     O.rg = .5 * O.rg + .5;
+
+    // Set phasorField value
+    phasorField = vec4(O.ba, 0., 1.);
+
+    O.b = 0.;
 
     // alpha = 1 on all shaded pixels
     O.a = 1.;

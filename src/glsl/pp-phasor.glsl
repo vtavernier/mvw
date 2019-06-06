@@ -17,8 +17,8 @@ void mainImage(out vec4 O, in vec2 U)
     O.rg = 2. * O.rg - 1.;
 
     if (dPhase) {
-        O.b = atan(O.g, O.r);
-        O.rgb = cm_matlab_hsv(mod(O.b, 2. * M_PI) / (2. * M_PI)).rgb;
+        float phase = mod(atan(P.g, P.r), 2. * M_PI) / (2. * M_PI);
+        O.rgb = length(P.rg) * cm_matlab_hsv(phase).rgb;
     } else {
         // Show only noise value
         O.rgb = .5 + .5 * vec3(O.g / length(O.rg));
