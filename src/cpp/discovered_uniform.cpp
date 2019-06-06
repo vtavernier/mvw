@@ -434,7 +434,7 @@ discovered_uniform discovered_uniform::parse_spec(
     throw std::runtime_error("invalid type");
 }
 
-void try_parse_uniform(const std::string &line,
+bool try_parse_uniform(const std::string &line,
                        std::vector<discovered_uniform> &discovered_uniforms) {
     std::smatch match;
     if (regex_search(line, match, regex_vardecl) && match.size() > 1) {
@@ -465,7 +465,11 @@ void try_parse_uniform(const std::string &line,
             match_def.size() > 1 ? match_def.str(1) : "", name,
             match_unm.size() > 1 ? match_unm.str(1) : name, type,
             match_mod.size() > 1 ? match_mod.str(1) : "slider"));
+
+        return true;
     }
+
+    return false;
 }
 
 template <typename L, typename R>

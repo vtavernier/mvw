@@ -1,14 +1,18 @@
+[% PROCESS pp/color.glsl %]
 [% PROCESS pp/params.glsl %]
 [% PROCESS pp/lighting.glsl %]
 [% PROCESS core/math.glsl %]
 [% PROCESS MATLAB_hsv.frag | replace('colormap', 'cm_matlab_hsv') %]
+
+//! phasorField binding=phasorField
 
 //! bool dPhase def=false cat="Debug" unm="Show phase field"
 uniform bool dPhase;
 
 void mainImage(out vec4 O, in vec2 U)
 {
-    O = texture(iChannel0, U / iResolution.xy);
+    O = texture(colorOutput, U / iResolution.xy);
+    vec4 P = texture(phasorField, U / iResolution.xy); // phasor field
 
     O.rg = 2. * O.rg - 1.;
 

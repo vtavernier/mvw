@@ -1,0 +1,1 @@
+//! colorOutput binding=0

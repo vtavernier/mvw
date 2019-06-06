@@ -9,6 +9,7 @@
 
 #include "mvw_buffer.hpp"
 
+#include "discovered_bindings.hpp"
 #include "discovered_uniform.hpp"
 
 #include "options.hpp"
@@ -44,6 +45,7 @@ struct gl_state {
         std::shared_ptr<shadertoy::buffers::toy_buffer> postprocess_buffer;
 
         std::vector<discovered_uniform> discovered_uniforms;
+        std::vector<discovered_binding> buffer_bindings;
 
         chain_instance(std::shared_ptr<shadertoy::compiler::program_template>
                            g_buffer_template,
@@ -62,7 +64,7 @@ struct gl_state {
         }
 
        private:
-        void parse_uniforms(const shader_file_program &sfp);
+        void parse_directives(const shader_file_program &sfp, bool parse_bindings);
 
         void compile_shader_source(const std::string &shader_path);
     };

@@ -74,8 +74,8 @@ gl_state::chain_instance::chain_instance(
             [this](const auto &source) {});
 
     // Parse uniforms from source
-    parse_uniforms(opt.shader);
-    parse_uniforms(opt.postprocess);
+    parse_directives(opt.shader, false);
+    parse_directives(opt.postprocess, true);
 
     // Create the geometry buffer
     geometry_buffer = std::make_shared<mvw_buffer>("geometry");
@@ -127,15 +127,16 @@ gl_state::chain_instance::chain_instance(
             [this](const auto &path) { postprocess_buffer->source_file(path); },
             [this](const auto &source) { postprocess_buffer->source(source); });
 
-        // The postprocess pass has the output of the geometry pass as input 0
-        auto postprocess_input(
-            std::make_shared<shadertoy::inputs::buffer_input>(geometry_target, 0));
-        postprocess_input->min_filter(GL_LINEAR_MIPMAP_LINEAR);
-        postprocess_buffer->inputs().emplace_back(postprocess_input);
+        // Bind outputs according to the parsed definitions
+        for (const auto &binding : buffer_bindings) {
+            auto binding_input(
+                std::make_shared<shadertoy::inputs::buffer_input>(
+                    geometry_target, binding.target_name));
 
-        auto lighting_input(
-            std::make_shared<shadertoy::inputs::buffer_input>(geometry_target, 1));
-        postprocess_buffer->inputs().emplace_back(lighting_input);
+            binding_input->min_filter(GL_LINEAR_MIPMAP_LINEAR);
+            postprocess_buffer->inputs().emplace_back(binding.uniform_name,
+                                                      binding_input);
+        }
 
         // Add postprocess pass to the chain
         chain.emplace_back(postprocess_buffer, make_size_ref(render_size),
@@ -270,14 +271,15 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
     }
 }
 
-void gl_state::chain_instance::parse_uniforms(const shader_file_program &sfp) {
+void gl_state::chain_instance::parse_directives(const shader_file_program &sfp, bool parse_bindings) {
     if (sfp.empty()) return;
 
     std::string line;
     auto ifs(sfp.open());
     while (!ifs->eof()) {
         std::getline(*ifs, line);
-        try_parse_uniform(line, discovered_uniforms);
+        if (!try_parse_uniform(line, discovered_uniforms) && parse_bindings)
+            try_parse_binding(line, buffer_bindings);
     }
 }
 

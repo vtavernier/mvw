@@ -1,3 +1,4 @@
+[% PROCESS pp/color.glsl %]
 [% PROCESS pp/params.glsl %]
 [% PROCESS pp/lighting.glsl %]
 
@@ -12,8 +13,8 @@ uniform bool cRenormalize;
 
 void mainImage(out vec4 O, in vec2 U)
 {
-    vec4 c = texture(iChannel0, U / iResolution.xy);
-    vec4 fc = textureLod(iChannel0, U / iResolution.xy, (cAdaptiveWindow ? pow(c.g, 2.0) : 1.0) * cFilterLod);
+    vec4 c = texture(colorOutput, U / iResolution.xy);
+    vec4 fc = textureLod(colorOutput, U / iResolution.xy, (cAdaptiveWindow ? pow(c.g, 2.0) : 1.0) * cFilterLod);
 
     if (dGrid) {
         O = c;

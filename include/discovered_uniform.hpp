@@ -64,7 +64,7 @@ struct discovered_uniform {
                        s_username, s_mode);
 };
 
-void try_parse_uniform(const std::string &line,
+bool try_parse_uniform(const std::string &line,
                        std::vector<discovered_uniform> &discovered_uniforms);
 
 bool try_set_variant(uniform_variant &dst, const uniform_variant &value);
