@@ -6,8 +6,12 @@
 
 //! phasorField binding=phasorField
 
-//! bool dPhase def=false cat="Debug" unm="Show phase field"
+//! bool dPhase def=false cat="Phasor Debug" unm="Show phase field"
 uniform bool dPhase;
+//! bool dNoiseOverlay def=false cat="Phasor Debug" unm="Overlay noise"
+uniform bool dNoiseOverlay;
+//! bool dComplexOutput def=false cat="Phasor Debug" unm="Complex output"
+uniform bool dComplexOutput;
 
 void mainImage(out vec4 O, in vec2 U)
 {
@@ -18,11 +22,27 @@ void mainImage(out vec4 O, in vec2 U)
     O.rg = 2. * O.rg - 1.;
 
     // Noise value
-    C.rgb = .5 + .5 * vec3(O.g / length(O.rg));
+    float norm = length(O.rg);
+    C.rgb = .5 + .5 * vec3(O.g / norm);
 
     if (dPhase) {
-        float phase = mod(atan(P.g, P.r), 2. * M_PI) / (2. * M_PI);
-        O.rgb = C.rgb * a + (1. - a) * (.45 * length(P.rg) + .5) * cm_matlab_hsv(phase).rgb;
+        float angle = atan(P.g, P.r);
+        float phase = mod(angle, 2. * M_PI) / (2. * M_PI);
+
+        if (dComplexOutput) {
+            O.r = cos(angle);
+            O.g = sin(angle);
+            O.b = 0.;
+
+            O.rg *= norm;
+            O.rg = O.rg / 2. + .5;
+        } else {
+            O.rgb = cm_matlab_hsv(phase).rgb;
+        }
+
+        if (dNoiseOverlay) {
+            O.rgb = C.rgb * a + (1. - a) * (.45 * length(P.rg) + .5) * O.rgb;
+        }
     } else {
         // Show only noise value
         O.rgb = C.rgb;
