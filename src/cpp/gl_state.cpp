@@ -190,6 +190,10 @@ void gl_state::load_chain(const shader_program_options &opt) {
                 }
             }
         }
+    } else {
+        if (geometry_ && geometry_->has_hint(HINT_NOLIGHT)) {
+            chains.back()->set_named("dLighting", false);
+        }
     }
 }
 
@@ -218,7 +222,7 @@ void gl_state::load_geometry(const geometry_options &geometry) {
 
         if (geometry_->has_hint(HINT_NOLIGHT)) {
             for (auto &chain : chains) {
-                chain->set_uniform("dLighting", 0);
+                chain->set_named("dLighting", false);
             }
         }
     }
@@ -268,6 +272,16 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
 
         // Note that both chains share the same program, so restore the wireframe value
         geometry_chain.set_uniform("bWireframe", 0);
+    }
+}
+
+void gl_state::chain_instance::set_named(const std::string &identifier, ::uniform_variant value) {
+    for (auto &du : discovered_uniforms) {
+        if (du.s_name.compare(identifier) == 0) {
+            du.value = value;
+            du.set_uniform(*this);
+            break;
+        }
     }
 }
 

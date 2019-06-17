@@ -63,6 +63,8 @@ struct gl_state {
             geometry_chain.set_uniform(identifier, std::forward<Targs...>(value...));
         }
 
+        void set_named(const std::string &identifier, uniform_variant value);
+
        private:
         void parse_directives(const shader_file_program &sfp, bool parse_bindings);
 
