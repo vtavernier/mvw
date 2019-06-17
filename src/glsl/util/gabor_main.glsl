@@ -1,6 +1,3 @@
-//! bool dGrid def=false cat="Debug" unm="Show grid"
-uniform bool dGrid;
-
 layout(location = 1) out vec4 fragLighting;
 
 void mainImage(out vec4 O, in vec2 U)
