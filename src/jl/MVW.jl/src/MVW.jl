@@ -101,7 +101,7 @@ setscale(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.sets
 geometry(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.geometry, mvw, args...; kwargs...)
 loaddefaults(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.loaddefaults, mvw, args...; kwargs...)
 
-function getf(mvw::AbstractMvw, target::AbstractString = "", size::Tuple{Int, Int} = (256, 256); kwargs...)
+function getf(mvw::AbstractMvw; target::AbstractString = "", size::Tuple{Int, Int} = (256, 256), kwargs...)
     if length(kwargs) > 0
         loaddefaults(mvw)
 
