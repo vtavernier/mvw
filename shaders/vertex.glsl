@@ -15,6 +15,8 @@ uniform vec3 bboxMin;
 
 uniform bool dQuad;
 
+uniform vec3 iResolution;
+
 // Vertex attributes
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 texCoord;
@@ -31,6 +33,7 @@ void main() {
     vPosition = position;
 
     if (dQuad) {
+        vPosition *= vec3(iResolution.x / iResolution.y, 1.0, 1.0);
         gl_Position = vec4(position, 1.0);
     } else {
         gl_Position = mProj * mView * mModel * vec4(position, 1.0);
