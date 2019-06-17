@@ -40,8 +40,6 @@ uniform bool bWireframe;
 uniform vec3 bboxMax;
 uniform vec3 bboxMin;
 
-uniform bool dQuad;
-
 #pragma shadertoy part buffer:inputs
 #pragma shadertoy part buffer:sources
 

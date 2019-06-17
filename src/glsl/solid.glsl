@@ -1,3 +1,5 @@
+[% PROCESS core/debug.glsl %]
+
 void mainImage(out vec4 O, in vec2 U)
 {
     // Initial return value

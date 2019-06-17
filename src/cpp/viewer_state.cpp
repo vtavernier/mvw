@@ -6,7 +6,6 @@
 
 viewer_state::viewer_state()
     : draw_wireframe(false),
-      draw_quad(false),
       rotate_camera(false),
       user_rotate(0),
       pressed_pos_x(0.),

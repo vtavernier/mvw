@@ -10,7 +10,6 @@
 
 struct viewer_state {
     bool draw_wireframe;
-    bool draw_quad;
     bool rotate_camera;
     glm::vec2 user_rotate;
     double pressed_pos_x;

@@ -54,7 +54,7 @@ struct gl_state {
                        shadertoy::rsize &render_size);
 
         void render(shadertoy::render_context &context, bool draw_wireframe,
-                    bool draw_quad, const shadertoy::rsize &render_size,
+                    const shadertoy::rsize &render_size,
                     std::shared_ptr<mvw_geometry> geometry, bool full_render);
 
         template <typename TKey, typename... Targs>
@@ -80,7 +80,7 @@ struct gl_state {
 
     void load_geometry(const geometry_options &geometry);
 
-    void render(bool draw_wireframe, bool draw_quad, int back_revision = 0,
+    void render(bool draw_wireframe, int back_revision = 0,
                 bool full_render = true);
 
     bool render_imgui(int back_revision = 0);

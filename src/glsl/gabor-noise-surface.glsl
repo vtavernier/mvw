@@ -1,3 +1,4 @@
+[% PROCESS core/debug.glsl %]
 [% PROCESS core/math.glsl %]
 [% PROCESS core/hash.glsl %]
 [% PROCESS prng/xorshift.glsl %]

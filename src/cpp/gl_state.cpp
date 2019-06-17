@@ -229,7 +229,7 @@ void gl_state::load_geometry(const geometry_options &geometry) {
 }
 
 void gl_state::chain_instance::render(shadertoy::render_context &context,
-                                      bool draw_wireframe, bool draw_quad,
+                                      bool draw_wireframe,
                                       const shadertoy::rsize &render_size,
                                       std::shared_ptr<mvw_geometry> geometry,
                                       bool full_render) {
@@ -241,9 +241,19 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
         return;
     }
 
-    // Update quad rendering status
+    // Find if we are rendering as a quad
+    bool draw_quad = false;
+    for (const auto &du : discovered_uniforms) {
+        if (du.s_name.compare("dQuad") == 0) {
+            if (auto p = std::get_if<bool>(&du.value); p) {
+                draw_quad = *p;
+            }
+
+            break;
+        }
+    }
+
     geometry_buffer->render_quad(draw_quad);
-    chain.set_uniform("dQuad", draw_quad ? 1 : 0);
 
     // First call: draw the shaded geometry
     // Render the swap chain
@@ -265,7 +275,6 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
                 render_size.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
         // Second call: render wireframe on top without post-processing
-        geometry_chain.set_uniform("dQuad", draw_quad ? 1 : 0);
         geometry_chain.set_uniform("bWireframe", 1);
 
         context.render(geometry_chain);
@@ -327,10 +336,10 @@ void gl_state::chain_instance::compile_shader_source(
     }
 }
 
-void gl_state::render(bool draw_wireframe, bool draw_quad, int back_revision,
+void gl_state::render(bool draw_wireframe, int back_revision,
                       bool full_render) {
     chains.at(chains.size() + back_revision - 1)
-        ->render(context, draw_wireframe, draw_quad, render_size,
+        ->render(context, draw_wireframe, render_size,
                  geometry_, full_render);
 }
 

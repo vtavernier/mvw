@@ -159,8 +159,6 @@ void viewer_window::run() {
         need_render_ |=
             ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
 
-        need_render_ |= ImGui::Checkbox("Render as quad", &state_->draw_quad);
-
         if (ImGui::Button("Resize")) {
             gl_state_->render_size = window_render_size_;
             gl_state_->allocate_textures();
@@ -217,8 +215,8 @@ void viewer_window::run() {
         need_render_ |= state_->rotate_camera;
 
         // Render current revision
-        gl_state_->render(state_->draw_wireframe, state_->draw_quad,
-                          viewed_revision_, need_render_);
+        gl_state_->render(state_->draw_wireframe, viewed_revision_,
+                          need_render_);
 
         // We updated the rendering to the latest version
         bool has_renderered = need_render_;

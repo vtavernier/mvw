@@ -1,3 +1,5 @@
+[% PROCESS core/debug.glsl %]
+
 /*
  * Filtering Solid Gabor Noise
  * 
