@@ -86,6 +86,7 @@ setrotation(mvw::AbstractMvw, args...; kwargs...) = RPC.setrotation(connok(mvw),
 getscale(mvw::AbstractMvw, args...; kwargs...) = RPC.getscale(connok(mvw), args...; kwargs...)
 setscale(mvw::AbstractMvw, args...; kwargs...) = RPC.setscale(connok(mvw), args...; kwargs...)
 geometry(mvw::AbstractMvw, args...; kwargs...) = RPC.geometry(connok(mvw), args...; kwargs...)
+loaddefaults(mvw::AbstractMvw, args...; kwargs...) = RPC.loaddefaults(connok(mvw), args...; kwargs...)
 
 getframe(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getframe, mvw, args...; kwargs...)
 getparams(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getparams, mvw, args...; kwargs...)
@@ -98,6 +99,37 @@ setrotation(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.s
 getscale(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.getscale, mvw, args...; kwargs...)
 setscale(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.setscale, mvw, args...; kwargs...)
 geometry(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.geometry, mvw, args...; kwargs...)
+loaddefaults(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...) = dorpc(RPC.loaddefaults, mvw, args...; kwargs...)
 
-export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam, getcamera, setcamera, getrotation, setrotation, getscale, setscale, geometry
+function getf(mvw::AbstractMvw, target::AbstractString = "", size::Tuple{Int, Int} = (256, 256); kwargs...)
+    if length(kwargs) > 0
+        loaddefaults(mvw)
+
+        for (k,v) in kwargs
+            setparam(mvw, string(k), v)
+        end
+    end
+
+    getframe(mvw, target=target, size=size)
+end
+
+function getf(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...)
+    map(mvw) do item
+        getf(item, args...; kwargs...)
+    end
+end
+
+function getp(mvw::AbstractMvw)
+    map(getparams(mvw)) do param
+        (Symbol(param["s_name"]), param["value"])
+    end
+end
+
+function getp(mvw::AbstractArray{AbstractMvw,1}, args...; kwargs...)
+    map(mvw) do item
+        getp(item, args...; kwargs...)
+    end
+end
+
+export AbstractMvw, RemoteMvw, SpawnedMvw, connect, spawn, getframe, getparams, getparam, setparam, getcamera, setcamera, getrotation, setrotation, getscale, setscale, geometry, loaddefaults, getf, getp
 end # module

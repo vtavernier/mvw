@@ -19,6 +19,7 @@ class viewer_state;
 #define CMD_NAME_GETSCALE "getscale"
 #define CMD_NAME_SETSCALE "setscale"
 #define CMD_NAME_GEOMETRY "geometry"
+#define CMD_NAME_LOADDEFAULTS "loaddefaults"
 
 namespace net {
 class server_impl;
@@ -48,6 +49,8 @@ class server {
     void handle_setscale(viewer_state &state, bool &changed_state) const;
 
     void handle_geometry(gl_state &gl_state, viewer_state &state, bool &changed_state) const;
+
+    void handle_loaddefaults(gl_state &gl_state, bool &changed_state) const;
 
    public:
     server(const server_options &opt, const log_options &log_opt);

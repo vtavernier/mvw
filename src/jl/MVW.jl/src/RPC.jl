@@ -212,4 +212,19 @@ function geometry(connection::Connection, is_nff_source::Bool, source::AbstractS
         error("geometry failed: " * details)
     end
 end
+
+function loaddefaults(connection::Connection)
+    # Send loaddefaults request
+    msg = ZMQ.Message("loaddefaults")
+    ZMQ.send(connection.socket, msg)
+
+    # Fetch response
+    response = MsgPack.unpack(ZMQ.recv(connection.socket, Vector{UInt8}))
+
+    if response isa Bool
+    else
+        (success, details) = response
+        error("loaddefaults failed: " * details)
+    end
+end
 end

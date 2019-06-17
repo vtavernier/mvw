@@ -294,6 +294,12 @@ void gl_state::chain_instance::set_named(const std::string &identifier, ::unifor
     }
 }
 
+void gl_state::chain_instance::load_defaults() {
+    for (auto &du : discovered_uniforms) {
+        du.value = du.s_def;
+    }
+}
+
 void gl_state::chain_instance::parse_directives(const shader_file_program &sfp, bool parse_bindings) {
     if (sfp.empty()) return;
 
@@ -458,5 +464,16 @@ void gl_state::update_uniforms(float t, const viewer_state &state) {
 
         chain->set_uniform("bboxMax", bbox_max);
         chain->set_uniform("bboxMin", bbox_min);
+    }
+}
+
+void gl_state::load_defaults() {
+    bool hint_nolight = geometry_ && geometry_->has_hint(HINT_NOLIGHT);
+
+    for (auto &chain : chains) {
+        chain->load_defaults();
+
+        if (hint_nolight)
+            chain->set_named("dLighting", false);
     }
 }

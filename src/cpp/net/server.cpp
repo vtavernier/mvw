@@ -36,6 +36,7 @@ typedef float setscale_args;
 typedef bool setscale_reply;
 typedef msgpack::type::tuple<bool, std::string> geometry_args; // 0 is true if NFF format
 typedef bool geometry_reply;
+typedef bool loaddefaults_reply;
 
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
@@ -373,6 +374,15 @@ void server::handle_geometry(gl_state &gl_state, viewer_state &state, bool &chan
     impl_->send(result);
 }
 
+void server::handle_loaddefaults(gl_state &gl_state, bool &changed_state) const
+{
+   gl_state.load_defaults();
+   changed_state = true;
+
+   net::loaddefaults_reply result(true);
+   impl_->send(result);
+}
+
 server::server(const server_options &opt, const log_options &log_opt)
     : opt_(opt), impl_{std::make_unique<server_impl>(opt, log_opt)} {}
 
@@ -448,6 +458,8 @@ bool server::poll(viewer_state &state, gl_state &gl_state, int revision) const {
                 handle_setscale(state, changed_state);
             } else if (cmdname.compare(CMD_NAME_GEOMETRY) == 0) {
                 handle_geometry(gl_state, state, changed_state);
+            } else if (cmdname.compare(CMD_NAME_LOADDEFAULTS) == 0) {
+                handle_loaddefaults(gl_state, changed_state);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);

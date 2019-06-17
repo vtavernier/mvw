@@ -65,6 +65,8 @@ struct gl_state {
 
         void set_named(const std::string &identifier, uniform_variant value);
 
+        void load_defaults();
+
        private:
         void parse_directives(const shader_file_program &sfp, bool parse_bindings);
 
@@ -100,6 +102,8 @@ struct gl_state {
     void allocate_textures();
 
     void update_uniforms(float t, const viewer_state &state);
+
+    void load_defaults();
 
    private:
     std::shared_ptr<shadertoy::compiler::program_template> g_buffer_template_;
