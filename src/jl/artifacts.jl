@@ -1,6 +1,7 @@
 using MVW, Images
 using Plots: plot, heatmap
 using DSP
+import Bresenham
 
 # Kill the existing viewer if we're restarting
 if @isdefined mPN
@@ -29,45 +30,10 @@ angleimg(x) = HSV((angle(x) + pi) / 2pi * 360., 1., 1.)
 img = clamp01.(r[1])
 
 function sampleline(data::Matrix{T}, x0::Int, y0::Int, x1::Int, y1::Int) where T
-    δx = abs(x1 - x0)
-    δy = abs(y1 - y0)
-    er = 0.0
     vals = Vector{T}()
 
-    if δy < δx
-        if x0 > x1
-            (x0, x1) = (x1, x0)
-            (y0, y1) = (y1, y0)
-        end
-
-        δe = abs(δy / δx)
-
-        y = y0
-        for x in x0:x1
-            append!(vals, data[x, y])
-            er += δe
-            if er > 0.5
-                y  += 1
-                er -= 1.0
-            end
-        end
-    else
-        if y0 > y1
-            (y0, y1) = (y1, y0)
-            (x0, x1) = (x1, x0)
-        end
-
-        δe = abs(δx / δy)
-
-        x = x0
-        for y in y0:y1
-            append!(vals, data[x, y])
-            er += δe
-            if er > 0.5
-                x  += 1
-                er -= 1.0
-            end
-        end
+    Bresenham.line(x0, y0, x1, y1) do x,y
+        append!(vals, data[x, y])
     end
 
     return vals
@@ -112,17 +78,15 @@ end
 
 using Gtk.ShortNames, GtkReactive, Graphics, Colors
 
-if !@isdefined win
-    win = Window("Drawing")
-    c = canvas(UserUnit)       # create a canvas with user-specified coordinates
-    push!(win, c)
+win = Window("Phasor noise phase tool", size(img)...)
+c = canvas(UserUnit)       # create a canvas with user-specified coordinates
+push!(win, c)
 
-    const lines = Signal([])   # the list of lines that we'll draw
-    const newline = Signal([]) # the in-progress line (will be added to list above)
+const lines = Signal([])   # the list of lines that we'll draw
+const newline = Signal([]) # the in-progress line (will be added to list above)
 
-    # Add mouse interactions
-    const drawing = Signal(false)  # this will be true if we're dragging a new line
-end
+# Add mouse interactions
+const drawing = Signal(false)  # this will be true if we're dragging a new line
 
 sigstart = map(c.mouse.buttonpress) do btn
     if btn.button == 1
@@ -161,6 +125,5 @@ redraw = draw(c, lines, newline) do cnvs, lns, newl
     end
     drawline(ctx, newl, colorant"white")
 end
-
 
 Gtk.showall(win)
