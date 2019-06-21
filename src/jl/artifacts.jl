@@ -1,6 +1,7 @@
 using MVW, Images
 using Plots: plot, heatmap
 using DSP
+using Printf
 import Bresenham
 
 # Kill the existing viewer if we're restarting
@@ -19,6 +20,11 @@ r = [
     getf(mPN, size=(512,512); p..., dPhase = true, dNoiseOverlay = true),
 ]
 
+## Debug version
+#mPN = spawn("../../build", ["-G", "#test\nplane\n", "-s", "glsl/gradient.glsl", "-m"]);
+#p = Dict(:dQuad => true)
+#r = [ getf(mPN; p...), getf(mPN; p...), getf(mPN; p...) ]
+
 # Complex phasor field, [-1;1] range
 phasor = 2. .* channelview(r[2])[1:2,:,:] .- 1.;
 phasor = Complex.(phasor[1,:,:], phasor[2,:,:]);
@@ -33,10 +39,22 @@ function sampleline(data::Matrix{T}, x0::Int, y0::Int, x1::Int, y1::Int) where T
     vals = Vector{T}()
 
     Bresenham.line(x0, y0, x1, y1) do x,y
-        append!(vals, data[x, y])
+        f = data[y, x]
+        push!(vals, f)
     end
 
     return vals
+end
+
+function samplergb(data::Array{T, 3}, x0::Int, y0::Int, x1::Int, y1::Int) where T
+    vals = []
+
+    Bresenham.line(x0, y0, x1, y1) do x,y
+        f = data[1:3, y, x]
+        push!(vals, f)
+    end
+
+    return transpose(hcat(vals...))
 end
 
 function drawline(ctx, l, color)
@@ -60,18 +78,19 @@ function plotselected()
         s = size(d)
 
         # Compute points
-        x0 = trunc(Int, a.x.val * s[1])
-        y0 = s[2] - floor(Int, a.y.val * s[2] + .5)
-        x1 = trunc(Int, b.x.val * s[1])
-        y1 = s[2] - floor(Int, b.y.val * s[2] + .5)
+        x0 = 1 + floor(Int, a.x.val * s[1])
+        y0 = 1 + floor(Int, a.y.val * s[2])
+        x1 = 1 + floor(Int, b.x.val * s[1])
+        y1 = 1 + floor(Int, b.y.val * s[2])
 
-        noisev = sampleline(2 .* channelview(r[1])[1,:,:] .- 1., x0, y0, x1, y1)
+        noisev = samplergb(2 .* channelview(r[1]) .- 1., x0, y0, x1, y1)
         phasev = sampleline(angle.(phasor), x0, y0, x1, y1)
         Unwrap.unwrap!(phasev)
 
         display(plot(
-            plot(noisev, ylims = (-1,1), m = (:dot), title = "Noise value"),
-            plot(phasev, ylims = (-2pi,2pi), m = (:dot), title = "Phasor phase")))
+            plot(noisev, ylims = (-1,1), title = "Noise value",
+                 label = ["R", "G", "B"], lc = [:red :green :blue]),
+            plot(phasev, ylims = (-2pi,2pi), shape = (:cross), title = "Phasor phase")))
     end
     nothing
 end
@@ -100,7 +119,23 @@ const dummybutton = MouseButton{UserUnit}()
 sigextend = map(filterwhen(drawing, dummybutton, c.mouse.motion)) do btn
     v = value(newline)
     if length(v) > 0
-        v = [first(v), btn.position]
+        p0 = first(v)
+        p1 = btn.position
+
+        if btn.modifiers & SHIFT == SHIFT
+            dx = p1.x.val - p0.x.val
+            dy = p1.y.val - p0.y.val
+            if abs(dx) > 2 * abs(dy)
+                p1 = XY{UserUnit}(p1.x, p0.y)
+            elseif abs(dy) > 2 * abs(dx)
+                p1 = XY{UserUnit}(p0.x, p1.y)
+            else
+                d = min(abs(dx), abs(dy))
+                p1 = XY{UserUnit}(p0.x.val + d * sign(dx), p0.y.val + d * sign(dy))
+            end
+        end
+
+        v = [p0, p1]
         push!(newline, v)
     end
 end
@@ -111,7 +146,14 @@ sigend = map(c.mouse.buttonrelease) do btn
         push!(lines, push!(value(lines), value(newline)))
         push!(newline, [])
 
-        plotselected()
+        try
+            plotselected()
+        catch e
+            push!(lines, [])
+            println(e)
+        end
+
+        nothing
     end
 end
 
