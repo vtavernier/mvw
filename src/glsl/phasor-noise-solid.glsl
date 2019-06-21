@@ -10,13 +10,12 @@
 [% PROCESS gabor/kernel.glsl %]
 [% PROCESS gabor/grid.glsl %]
 
-#define W0VEC(w0) vec3(cos(w0.x)*cos(w0.y),sin(w0.x)*cos(w0.y),sin(w0.y))
+#define W0VECXY(x,y) vec3(cos(x)*cos(y),sin(x)*cos(y),sin(y))
+#define W0VEC(w0) W0VECXY(w0.x, w0.y)
+#define GETW0(w0,a) W0VECXY(w0.x + floor(a * gLobes) / (2.0 * gLobes) * 2.0 * M_PI, w0.y)
 #define _TILE_SIZE vec3(gTilesize)
 
 void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 n) {
-    // Orientation at current world position
-    vec3 w0 = W0VEC(gW0);
-
     // Seed the point generator
     int splats;
     pg_state pstate;
@@ -28,7 +27,11 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
     {
         // Get a point properties
         vec4 td_point;
-        pg_point4(pstate, td_point);
+        vec2 td_extra;
+        pg_point6(pstate, td_point, td_extra);
+
+        // Orientation at current world position
+        vec3 w0 = GETW0(gW0, td_extra.x);
 
         // Adjust point for tile properties
         td_point.xyz = center + _TILE_SIZE / 2. * td_point.xyz;

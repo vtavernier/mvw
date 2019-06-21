@@ -6,3 +6,5 @@ uniform float gF0;
 uniform vec2 gW0;
 //! bool dGrid def=false cat="Debug" unm="Show grid"
 uniform bool dGrid;
+//! int gLobes min=1 max=20 fmt="%d" cat="Gabor noise (2019)" unm="Lobes" def=1
+uniform int gLobes;

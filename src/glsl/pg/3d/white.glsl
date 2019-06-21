@@ -27,3 +27,9 @@ void pg_point4(inout pg_state this_, out vec4 pt)
     pt.xy = 2. * prng_rand2(this_.state) - 1.;
     pt.zw = 2. * prng_rand2(this_.state) - 1.;
 }
+
+void pg_point6(inout pg_state this_, out vec4 pt, out vec2 extra)
+{
+    pg_point4(this_, pt);
+    extra = prng_rand2(this_.state);
+}
