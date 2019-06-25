@@ -52,6 +52,7 @@ struct gl_state {
         std::vector<discovered_binding> buffer_bindings;
 
         bool needs_init;
+        std::string error_status;
 
         chain_instance(std::shared_ptr<shadertoy::compiler::program_template>
                            g_buffer_template,
@@ -66,6 +67,8 @@ struct gl_state {
 
         template <typename TKey, typename... Targs>
         void set_uniform(const TKey &identifier, Targs &&... value) const {
+            if (!error_status.empty()) return;
+
             chain.set_uniform(identifier, std::forward<Targs...>(value...));
             geometry_chain.set_uniform(identifier, std::forward<Targs...>(value...));
         }
@@ -77,6 +80,8 @@ struct gl_state {
         void init(shadertoy::render_context &context);
 
         void add_input(const std::string &name, std::shared_ptr<data_input> input);
+
+        void allocate_textures(shadertoy::render_context &context);
 
        private:
         void parse_directives(const shader_file_program &sfp, bool parse_bindings);

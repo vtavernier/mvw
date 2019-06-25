@@ -21,16 +21,10 @@ using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
 void viewer_window::reload_shader() {
-    try {
-        // Reinitialize chain
-        gl_state_->load_chain(opt_.program);
-        VLOG->info("Reloaded swap-chain");
-        need_render_ = true;
-    } catch (shadertoy::gl::shader_compilation_error &ex) {
-        VLOG->error("Failed to compile shader: {}", ex.log());
-    } catch (shadertoy::gl::program_link_error &ex) {
-        VLOG->error("Failed to link program: {}", ex.log());
-    }
+    // Reinitialize chain
+    gl_state_->load_chain(opt_.program);
+    VLOG->info("Reloaded swap-chain");
+    need_render_ = true;
 }
 
 viewer_window::viewer_window(viewer_options &&opt)
@@ -201,6 +195,12 @@ void viewer_window::run() {
             sprintf(overlay_buf, "a %2.3fms", mean);
             ImGui::PlotHistogram(label_buf, runtime_p_acc.data(),
                                  runtime_p_acc.size(), 0, overlay_buf);
+        }
+
+        ImGui::Text("Status");
+
+        if (!gl_state_->chains.empty()) {
+            ImGui::Text("%s", gl_state_->chains.back()->error_status.c_str());
         }
 
         ImGui::End();

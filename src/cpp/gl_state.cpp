@@ -171,17 +171,25 @@ gl_state::chain_instance::chain_instance(
 
     // Initialize context
     init(context);
-
-    // Set framerate uniforms
-    set_uniform("iTimeDelta", 1.0f / 60.0f);
-    set_uniform("iFrameRate", 60.0f);
 }
 
 void gl_state::load_chain(const shader_program_options &opt) {
     bool migrate_uniforms = !chains.empty();
+    auto chain = std::make_unique<chain_instance>(
+        g_buffer_template_, opt, inputs_, context, render_size);
 
-    chains.emplace_back(std::make_unique<chain_instance>(
-        g_buffer_template_, opt, inputs_, context, render_size));
+    if (!chains.empty()) {
+        // Replace errored chain
+        if (!chains.back()->error_status.empty())
+        {
+            chains.back().swap(chain);
+            migrate_uniforms = false;
+        }
+        else
+            chains.emplace_back(std::move(chain));
+    } else {
+        chains.emplace_back(std::move(chain));
+    }
 
     if (migrate_uniforms) {
         auto &chain_now = chains.back();
@@ -240,6 +248,11 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
     // Recompile if required
     if (needs_init) {
         init(context);
+    }
+
+    // Check if the chain is in error
+    if (!error_status.empty()) {
+        return;
     }
 
     // Set the geometry reference
@@ -310,12 +323,27 @@ void gl_state::chain_instance::load_defaults() {
 }
 
 void gl_state::chain_instance::init(shadertoy::render_context &context) {
-    context.init(chain);
-    VLOG->debug("Initialized main swap chain");
+    try {
+        context.init(chain);
+        VLOG->debug("Initialized main swap chain");
 
-    context.init(geometry_chain);
-    VLOG->debug("Initialized geometry-only swap chain");
+        context.init(geometry_chain);
+        VLOG->debug("Initialized geometry-only swap chain");
 
+        error_status = {};
+
+        // Set framerate uniforms
+        set_uniform("iTimeDelta", 1.0f / 60.0f);
+        set_uniform("iFrameRate", 60.0f);
+    } catch (shadertoy::gl::shader_compilation_error &ex) {
+        error_status = "Failed to compile shader: " + ex.log();
+        VLOG->error(error_status);
+    } catch (shadertoy::gl::program_link_error &ex) {
+        error_status = "Failed to link program: " + ex.log();
+        VLOG->error(error_status);
+    }
+
+    // Outside of try so we don't compile in a loop
     needs_init = false;
 }
 
@@ -323,6 +351,13 @@ void gl_state::chain_instance::add_input(const std::string &name, std::shared_pt
     geometry_buffer->inputs().emplace_back(name, input);
 
     needs_init = true;
+}
+
+void gl_state::chain_instance::allocate_textures(shadertoy::render_context &context) {
+    if (!error_status.empty()) return;
+
+    context.allocate_textures(chain);
+    context.allocate_textures(geometry_chain);
 }
 
 void gl_state::chain_instance::parse_directives(const shader_file_program &sfp, bool parse_bindings) {
@@ -465,8 +500,7 @@ bool gl_state::has_postprocess(int back_revision) const {
 
 void gl_state::allocate_textures() {
     for (auto &chain : chains) {
-        context.allocate_textures(chain->chain);
-        context.allocate_textures(chain->geometry_chain);
+        chain->allocate_textures(context);
     }
 }
 
