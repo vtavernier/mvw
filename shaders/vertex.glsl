@@ -33,7 +33,11 @@ void main() {
     vPosition = position;
 
     if (dQuad) {
-        vPosition *= vec3(iResolution.x / iResolution.y, 1.0, 1.0);
+        // Fix quad aspect ratio
+        float ratio = iResolution.x / iResolution.y;
+        vPosition.x *= ratio;
+        vtexCoord.x *= ratio;
+
         gl_Position = vec4(position, 1.0);
     } else {
         gl_Position = mProj * mView * mModel * vec4(position, 1.0);
