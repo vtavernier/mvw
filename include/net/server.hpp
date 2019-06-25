@@ -20,6 +20,7 @@ class viewer_state;
 #define CMD_NAME_SETSCALE "setscale"
 #define CMD_NAME_GEOMETRY "geometry"
 #define CMD_NAME_LOADDEFAULTS "loaddefaults"
+#define CMD_NAME_SETINPUT "setinput"
 
 namespace net {
 class server_impl;
@@ -51,6 +52,8 @@ class server {
     void handle_geometry(gl_state &gl_state, viewer_state &state, bool &changed_state) const;
 
     void handle_loaddefaults(gl_state &gl_state, bool &changed_state) const;
+
+    void handle_setinput(gl_state &gl_state, bool &changed_state) const;
 
    public:
     server(const server_options &opt, const log_options &log_opt);

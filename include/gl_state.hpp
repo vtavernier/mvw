@@ -14,6 +14,10 @@
 
 #include "options.hpp"
 
+#include "data_input.hpp"
+
+typedef std::map<std::string, std::shared_ptr<data_input>> input_map_t;
+
 class viewer_state;
 
 struct gl_state {
@@ -47,9 +51,12 @@ struct gl_state {
         std::vector<discovered_uniform> discovered_uniforms;
         std::vector<discovered_binding> buffer_bindings;
 
+        bool needs_init;
+
         chain_instance(std::shared_ptr<shadertoy::compiler::program_template>
                            g_buffer_template,
                        const shader_program_options &opt,
+                       const input_map_t &inputs,
                        shadertoy::render_context &context,
                        shadertoy::rsize &render_size);
 
@@ -66,6 +73,10 @@ struct gl_state {
         void set_named(const std::string &identifier, uniform_variant value);
 
         void load_defaults();
+
+        void init(shadertoy::render_context &context);
+
+        void add_input(const std::string &name, std::shared_ptr<data_input> input);
 
        private:
         void parse_directives(const shader_file_program &sfp, bool parse_bindings);
@@ -105,11 +116,16 @@ struct gl_state {
 
     void load_defaults();
 
+    void set_input(const std::string &name, std::vector<float> data, std::array<uint32_t, 3> dims);
+
    private:
     std::shared_ptr<shadertoy::compiler::program_template> g_buffer_template_;
 
     /// Loaded geometry handle
     std::shared_ptr<mvw_geometry> geometry_;
+
+    /// Named data inputs
+    input_map_t inputs_;
 };
 
 #endif /* _GL_STATE_HPP_ */

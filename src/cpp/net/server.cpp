@@ -37,6 +37,8 @@ typedef bool setscale_reply;
 typedef msgpack::type::tuple<bool, std::string> geometry_args; // 0 is true if NFF format
 typedef bool geometry_reply;
 typedef bool loaddefaults_reply;
+typedef msgpack::type::tuple<std::string, uint32_t, uint32_t, uint32_t> setinput_args;
+typedef bool setinput_reply;
 
 class server_impl {
     static void free_msgpack(void *data, void *hint) {
@@ -383,6 +385,53 @@ void server::handle_loaddefaults(gl_state &gl_state, bool &changed_state) const
    impl_->send(result);
 }
 
+void server::handle_setinput(gl_state &gl_state, bool &changed_state) const {
+   // Get the arguments
+   auto args = impl_->recv<setinput_args>();
+
+   // Create dims array
+   std::array<uint32_t, 3> dims{
+      args.get<1>(),
+      args.get<2>(),
+      args.get<3>()
+   };
+
+   // Allocate buffer
+   std::vector<float> buf(dims[0] * dims[1] * dims[2]);
+
+   // Read image
+   size_t read_size = impl_->socket.recv(buf.data(), sizeof(float) * buf.size());
+
+   if (read_size != buf.size() * sizeof(float)) {
+       std::stringstream ss;
+       ss << "invalid input buffer size: expected "
+          << dims[0]
+          << "x"
+          << dims[1]
+          << "x"
+          << dims[2]
+          << "("
+          << dims[0] * dims[1] * dims[2]
+          << " elements)"
+          << " but only received "
+          << read_size / sizeof(float)
+          << " elements";
+
+       net::default_reply result(false, ss.str());
+       impl_->send(result);
+       return;
+   }
+
+   // Set input
+   gl_state.set_input(args.get<0>(), buf, dims);
+
+   changed_state = true;
+
+   // Send reply
+   net::setinput_reply result(true);
+   impl_->send(result);
+}
+
 server::server(const server_options &opt, const log_options &log_opt)
     : opt_(opt), impl_{std::make_unique<server_impl>(opt, log_opt)} {}
 
@@ -460,6 +509,8 @@ bool server::poll(viewer_state &state, gl_state &gl_state, int revision) const {
                 handle_geometry(gl_state, state, changed_state);
             } else if (cmdname.compare(CMD_NAME_LOADDEFAULTS) == 0) {
                 handle_loaddefaults(gl_state, changed_state);
+            } else if (cmdname.compare(CMD_NAME_SETINPUT) == 0) {
+                handle_setinput(gl_state, changed_state);
             } else {
                 net::default_reply result(false, "unknown command");
                 impl_->send(result);

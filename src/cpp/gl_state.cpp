@@ -56,7 +56,9 @@ gl_state::gl_state(const frame_options &opt)
 
 gl_state::chain_instance::chain_instance(
     std::shared_ptr<compiler::program_template> g_buffer_template,
-    const shader_program_options &opt, shadertoy::render_context &context,
+    const shader_program_options &opt, 
+    const input_map_t &inputs,
+    shadertoy::render_context &context,
     rsize &render_size)
     : opt(opt) {
     bool has_postprocess = !opt.postprocess.empty();
@@ -85,6 +87,11 @@ gl_state::chain_instance::chain_instance(
     opt.shader.invoke(
         [this](const auto &path) { geometry_buffer->source_file(path); },
         [this](const auto &source) { geometry_buffer->source(source); });
+
+    // Register inputs
+    for (const auto &pair : inputs) {
+        geometry_buffer->inputs().emplace_back(pair.first, pair.second);
+    }
 
     // Add the geometry buffer to the swap chain, at the given size
     auto geometry_target =
@@ -163,11 +170,7 @@ gl_state::chain_instance::chain_instance(
     screen_member->state().blend_dst_alpha(GL_ONE_MINUS_SRC_ALPHA);
 
     // Initialize context
-    context.init(chain);
-    VLOG->debug("Initialized main swap chain");
-
-    context.init(geometry_chain);
-    VLOG->debug("Initialized geometry-only swap chain");
+    init(context);
 
     // Set framerate uniforms
     set_uniform("iTimeDelta", 1.0f / 60.0f);
@@ -178,7 +181,7 @@ void gl_state::load_chain(const shader_program_options &opt) {
     bool migrate_uniforms = !chains.empty();
 
     chains.emplace_back(std::make_unique<chain_instance>(
-        g_buffer_template_, opt, context, render_size));
+        g_buffer_template_, opt, inputs_, context, render_size));
 
     if (migrate_uniforms) {
         auto &chain_now = chains.back();
@@ -234,6 +237,11 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
                                       const shadertoy::rsize &render_size,
                                       std::shared_ptr<mvw_geometry> geometry,
                                       bool full_render) {
+    // Recompile if required
+    if (needs_init) {
+        init(context);
+    }
+
     // Set the geometry reference
     geometry_buffer->geometry(geometry);
 
@@ -299,6 +307,22 @@ void gl_state::chain_instance::load_defaults() {
     for (auto &du : discovered_uniforms) {
         du.value = du.s_def;
     }
+}
+
+void gl_state::chain_instance::init(shadertoy::render_context &context) {
+    context.init(chain);
+    VLOG->debug("Initialized main swap chain");
+
+    context.init(geometry_chain);
+    VLOG->debug("Initialized geometry-only swap chain");
+
+    needs_init = false;
+}
+
+void gl_state::chain_instance::add_input(const std::string &name, std::shared_ptr<data_input> input) {
+    geometry_buffer->inputs().emplace_back(name, input);
+
+    needs_init = true;
 }
 
 void gl_state::chain_instance::parse_directives(const shader_file_program &sfp, bool parse_bindings) {
@@ -476,5 +500,30 @@ void gl_state::load_defaults() {
 
         if (hint_nolight)
             chain->set_named("dLighting", false);
+    }
+}
+
+void gl_state::set_input(const std::string &name, std::vector<float> data, std::array<uint32_t, 3> dims) {
+    if (auto it = inputs_.find(name); it != inputs_.end()) {
+        VLOG->debug("updating input data for {}", name);
+
+        // Existing input
+        it->second->data = data;
+        it->second->dims = dims;
+        it->second->state = dis_gpu_dirty;
+    } else {
+        VLOG->debug("creating new input for {}", name);
+
+        // New input
+        auto input(std::make_shared<data_input>());
+        input->data = data;
+        input->dims = dims;
+
+        inputs_.emplace(name, input);
+
+        // Register the input in all chains
+        for (auto &chain : chains) {
+            chain->add_input(name, input);
+        }
     }
 }
