@@ -9,27 +9,14 @@
 [% PROCESS gabor/params.glsl %]
 [% PROCESS gabor/kernel.glsl %]
 [% PROCESS gabor/grid.glsl %]
+[% PROCESS gabor/orient.glsl %]
 
-#define W0VEC(w0) vec3(cos(w0.x)*cos(w0.y),sin(w0.x)*cos(w0.y),sin(w0.y))
 #define _TILE_SIZE vec3(gTilesize)
 
 //! float aSigma min=0.01 max=2.0 fmt="%2.3f" cat="Prefiltering" unm="Sigma" def=1.0
 uniform float aSigma;
 
 void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 n) {
-    // Orientation at current world position
-    vec3 w0 = W0VEC(gW0);
-
-    // Compute prefiltering at current pixel
-    vec3 w0p0 = w0 - dot(w0, n) * n;
-
-    float p = dot(vPosition, w0);
-    vec2 w0p = abs(vec2(dFdx(p), dFdy(p)));
-    float w0pn = length(w0p);
-
-    vec2 wP = 2. * M_PI * gF0 * w0p;
-    float f = exp(-pow(length(w0p0) * length(wP) / aSigma, 2.) / 2.);
-
     // Seed the point generator
     int splats;
     pg_state pstate;
@@ -41,7 +28,21 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 
     {
         // Get a point properties
         vec4 td_point;
-        pg_point4(pstate, td_point);
+        vec2 td_extra;
+        pg_point6(pstate, td_point, td_extra);
+
+        // Orientation at current world position
+        vec3 w0 = GETW0(gW0, td_extra.x);
+
+        // Compute prefiltering at current pixel
+        vec3 w0p0 = w0 - dot(w0, n) * n;
+
+        float p = dot(vPosition, w0);
+        vec2 w0p = abs(vec2(dFdx(p), dFdy(p)));
+        float w0pn = length(w0p);
+
+        vec2 wP = 2. * M_PI * gF0 * w0p;
+        float f = exp(-pow(length(w0p0) * length(wP) / aSigma, 2.) / 2.);
 
         // Adjust point for tile properties
         td_point.xyz = center + _TILE_SIZE / 2. * td_point.xyz;
