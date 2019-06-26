@@ -9,22 +9,29 @@ void mainImage(out vec4 O, in vec2 U)
     //debugRotGrid(O, vPosition, 0, _TILE_SIZE);
     vec3 n = normalize(vNormal);
 
-    // Grid-evaluate Gabor noise
-    cgaborGrid(O, bboxMin + vPosition, 1, _TILE_SIZE, n);
+    vec3 x = dQuad ? vec3(U.xy, 0.) : bboxMin + vPosition;
 
-    // Normalize output
-    O *= 1. / sqrt(float(gSplats));
+    if (dGrid) {
+        // Debug grid details
+        cdebugGrid(O, x, 0, _TILE_SIZE, n);
+    } else {
+        // Grid-evaluate Gabor noise
+        cgaborGrid(O, x, 1, _TILE_SIZE, n);
 
-    // [0, 1] range for the noise value
-    O.rg = .5 * O.rg + .5;
+        // Normalize output
+        O *= 1. / sqrt(float(gSplats));
 
-    // Set phasorField value
-    phasorField = vec4(O.ba, 0., 1.);
+        // [0, 1] range for the noise value
+        O.rg = .5 * O.rg + .5;
 
-    O.b = 0.;
+        // Set phasorField value
+        phasorField = vec4(O.ba, 0., 1.);
 
-    // alpha = 1 on all shaded pixels
-    O.a = 1.;
+        O.b = 0.;
+
+        // alpha = 1 on all shaded pixels
+        O.a = 1.;
+    }
 
     // Compute fragment lighting
     fragLighting = vec4(0., 0., 0., 1.);

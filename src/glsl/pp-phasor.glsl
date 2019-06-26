@@ -19,6 +19,10 @@ void mainImage(out vec4 O, in vec2 U)
     vec4 C = O = texture(colorOutput, U / iResolution.xy);
     vec4 P = texture(phasorField, U / iResolution.xy); // phasor field
 
+    if (dGrid) {
+        return;
+    }
+
     O.rg = 2. * O.rg - 1.;
 
     // Noise value
