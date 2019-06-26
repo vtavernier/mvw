@@ -486,6 +486,11 @@ std::vector<shadertoy::members::member_output_t> gl_state::get_render_result(int
     return member->output();
 }
 
+std::string gl_state::get_render_error(int back_revision) const {
+    auto &chain(chains.at(chains.size() + back_revision - 1));
+    return chain->error_status;
+}
+
 const std::vector<discovered_uniform> &gl_state::get_discovered_uniforms(
     int back_revision) const {
     return chains.at(chains.size() + back_revision - 1)->discovered_uniforms;

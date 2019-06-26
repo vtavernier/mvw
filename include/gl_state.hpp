@@ -107,6 +107,8 @@ struct gl_state {
 
     std::vector<shadertoy::members::member_output_t> get_render_result(int back_revision = 0, const std::string &target = "") const;
 
+    std::string get_render_error(int back_revision = 0) const;
+
     const std::vector<discovered_uniform> &get_discovered_uniforms(
         int back_revision = 0) const;
 

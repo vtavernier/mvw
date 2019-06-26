@@ -143,13 +143,21 @@ void server::handle_getframe(gl_state &gl_state, int revision, const std::string
 
         if (output_target == output.end())
         {
+            // If we couldn't find the input, make sure there's no error pending
+            std::string error_status(gl_state.get_render_error(revision));
+
             std::stringstream ss;
-            std::visit(
-                [&ss, &target_name](const auto &name) {
-                    ss << "output target '" << name
-                       << "' was not found on buffer '" << target_name << "'";
-                },
-                buffer_output_name);
+            if (error_status.empty()) {
+                std::visit(
+                    [&ss, &target_name](const auto &name) {
+                        ss << "output target '" << name
+                           << "' was not found on buffer '" << target_name << "'";
+                    },
+                    buffer_output_name);
+            } else {
+                ss << "render failed because of a compilation error: " << error_status;
+            }
+
             throw std::runtime_error(ss.str());
         }
     }
