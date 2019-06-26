@@ -17,6 +17,15 @@
 
 #define _TILE_SIZE vec3(gTilesize)
 
+//! vec2 ePosition min=0 max=1 cat="Phasor fix" unm="Position"
+uniform vec2 ePosition;
+//! float eAngle min=-90 max=90 cat="Phasor fix" unm="Angle" mod=angle
+uniform float eAngle;
+//! float eSize min=0 max=1 def=1 cat="Phasor fix" unm="Scale"
+uniform float eSize;
+//! float eNorm min=0 max=1 cat="Phasor fix" unm="Intensity"
+uniform float eNorm;
+
 void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 n) {
     // Seed the point generator
     int splats;
@@ -53,6 +62,8 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
         O += ch3(P, td_point.xyz, 1.0, gF0, w0, _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
     }
 
+    vec2 w = (gW0 + vec2(eAngle, 0.));
+    O += eNorm * ch3(P, vec3(ePosition, 0.), 1.0, gF0, GETW0(w, 0.), eSize * _TILE_SIZE, 0.);
 }
 
 void cdebugCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 n) {
