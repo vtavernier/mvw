@@ -21,7 +21,7 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 
     int splats;
     pg_state pstate;
 
-    ivec3 count = ivec3(ceil((bboxMax - bboxMin) / _TILE_SIZE));
+    ivec3 count = ivec3((dQuad ? vec3(1.0, 1.0, 0.0) : ceil(bboxMax - bboxMin)) / _TILE_SIZE);
     pg_seed(pstate, cell, count, 156237, gSplats);
 
     for (int i = 0; i < pg_splats(pstate); ++i)
@@ -43,6 +43,11 @@ void gaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 
 
         vec2 wP = 2. * M_PI * gF0 * w0p;
         float f = exp(-pow(length(w0p0) * length(wP) / aSigma, 2.) / 2.);
+
+        // On a quad, don't offset points in the z direction
+        if (dQuad) {
+            td_point.z = 0.;
+        }
 
         // Adjust point for tile properties
         td_point.xyz = center + _TILE_SIZE / 2. * td_point.xyz;

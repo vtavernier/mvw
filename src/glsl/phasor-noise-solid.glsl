@@ -31,6 +31,11 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
         // Orientation at current world position
         vec3 w0 = GETW0(gW0, td_extra.x);
 
+        // On a quad, don't offset points in the z direction
+        if (dQuad) {
+            td_point.z = 0.;
+        }
+
         // Adjust point for tile properties
         td_point.xyz = center + _TILE_SIZE / 2. * td_point.xyz;
 
