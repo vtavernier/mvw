@@ -1,10 +1,14 @@
 [% PROCESS core/debug.glsl %]
 [% PROCESS core/math.glsl %]
+[% IF ptgen == "data" %]
+[% PROCESS pg/3d/data.glsl %]
+[% ELSE %]
 [% PROCESS core/hash.glsl %]
 [% PROCESS prng/xoroshiro.glsl %]
 [% PROCESS prng/poisson.glsl %]
 [% SET white_poisson = 0 %]
 [% PROCESS pg/3d/white.glsl %]
+[% END %]
 [% SET kernel = "trunc" %]
 [% PROCESS gabor/params.glsl %]
 [% PROCESS gabor/kernel.glsl %]
@@ -18,7 +22,7 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
     int splats;
     pg_state pstate;
 
-    ivec3 count = ivec3(ceil((bboxMax - bboxMin) / _TILE_SIZE));
+    ivec3 count = ivec3((dQuad ? vec3(1.0, 1.0, 0.0) : ceil(bboxMax - bboxMin)) / _TILE_SIZE);
     pg_seed(pstate, cell, count, 156237, gSplats);
 
     for (int i = 0; i < pg_splats(pstate); ++i)
