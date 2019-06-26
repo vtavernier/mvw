@@ -52,10 +52,6 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
         // Adjust point for tile properties
         td_point.xyz = center + _TILE_SIZE / 2. * td_point.xyz;
 
-        // Project 3D point onto tangent plane
-        vec3 v = td_point.xyz - P;
-        float d = dot(v, n);
-
         // Relative location computed by ch3
 
         // Compute contribution
