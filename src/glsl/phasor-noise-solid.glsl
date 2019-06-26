@@ -37,12 +37,12 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
     for (int i = 0; i < pg_splats(pstate); ++i)
     {
         // Get a point properties
-        vec4 td_point;
-        vec2 td_extra;
-        pg_point6(pstate, td_point, td_extra);
+        vec4 td_point, td_extra;
+        pg_point4(pstate, td_point)
+        pg_point4(pstate, td_extra);
 
         // Orientation at current world position
-        vec3 w0 = GETW0(gW0, td_extra.x);
+        vec3 w0 = GETW0(gW0, .5 + .5 * td_extra.x);
 
         // On a quad, don't offset points in the z direction
         if (dQuad) {

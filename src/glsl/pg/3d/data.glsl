@@ -25,13 +25,5 @@ void pg_point4(inout pg_state this_, out vec4 pt)
 {
     ivec2 loc = ivec2(this_.current, this_.seed);
     pt = 2. * texelFetch(pointData, loc, 0) - 1.;
-    this_.current += 2;
-}
-
-void pg_point6(inout pg_state this_, out vec4 pt, out vec2 extra)
-{
-    ivec2 loc = ivec2(this_.current, this_.seed);
-    pt = 2. * texelFetch(pointData, loc, 0) - 1.;
-    extra = texelFetch(pointData, loc + ivec2(1, 0), 0).xy;
-    this_.current += 2;
+    this_.current += 1;
 }
