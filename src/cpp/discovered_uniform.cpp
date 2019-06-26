@@ -434,6 +434,19 @@ discovered_uniform discovered_uniform::parse_spec(
     throw std::runtime_error("invalid type");
 }
 
+std::string default_fmt(const std::string &type) {
+    if (!type.empty()) {
+        if (type[0] == 'f' || type[0] == 'v')
+            return "%2.3f";
+        if (type[0] == 'i')
+            return "%d";
+        if (type[0] == 'u')
+            return "%u";
+    }
+
+    return {};
+}
+
 bool try_parse_uniform(const std::string &line,
                        std::vector<discovered_uniform> &discovered_uniforms) {
     std::smatch match;
@@ -459,7 +472,7 @@ bool try_parse_uniform(const std::string &line,
         discovered_uniforms.emplace_back(discovered_uniform::parse_spec(
             match_min.size() > 1 ? match_min.str(1) : "0",
             match_max.size() > 1 ? match_max.str(1) : "1",
-            match_fmt.size() > 1 ? match_fmt.str(1) : "",
+            match_fmt.size() > 1 ? match_fmt.str(1) : default_fmt(type),
             match_pow.size() > 1 ? match_pow.str(1) : "1",
             match_cat.size() > 1 ? match_cat.str(1) : "",
             match_def.size() > 1 ? match_def.str(1) : "", name,
