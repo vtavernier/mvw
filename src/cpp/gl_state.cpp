@@ -174,26 +174,29 @@ gl_state::chain_instance::chain_instance(
 }
 
 void gl_state::load_chain(const shader_program_options &opt) {
-    bool migrate_uniforms = !chains.empty();
     auto chain = std::make_unique<chain_instance>(
         g_buffer_template_, opt, inputs_, context, render_size);
+    chain_instance *migrate_uniforms = nullptr;
 
     if (!chains.empty()) {
         // Replace errored chain
         if (!chains.back()->error_status.empty())
         {
             chains.back().swap(chain);
-            migrate_uniforms = false;
+            migrate_uniforms = chain.get();
         }
         else
+        {
+            migrate_uniforms = chains.back().get();
             chains.emplace_back(std::move(chain));
+        }
     } else {
         chains.emplace_back(std::move(chain));
     }
 
     if (migrate_uniforms) {
         auto &chain_now = chains.back();
-        auto &chain_before = *++chains.rbegin();
+        auto chain_before = migrate_uniforms;
 
         for (auto &uniform : chain_before->discovered_uniforms) {
             for (auto &new_uniform : chain_now->discovered_uniforms) {
