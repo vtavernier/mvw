@@ -2,10 +2,17 @@ struct pg_state {
     int seed;
     int splats;
     int current;
+    ivec3 tile_count;
 };
 
 void pg_seed(inout pg_state this_, ivec3 nc, ivec3 tile_count, int random_seed, int expected_splats)
 {
+    // Wrap-around
+    if (nc.x < 0) nc.x = tile_count.x + nc.x;
+    if (nc.y < 0) nc.y = tile_count.y + nc.y;
+    if (nc.z < 0) nc.z = tile_count.z + nc.z;
+    nc = nc % tile_count;
+
     // Pick row for the current cell
     this_.seed = int(nc.z * tile_count.x * tile_count.y + nc.y * tile_count.x + nc.x);
 
