@@ -21,7 +21,7 @@
 uniform vec2 ePosition;
 //! float eAngle min=-90 max=90 cat="Phasor fix" unm="Angle" mod=angle
 uniform float eAngle;
-//! float eSize min=0 max=1 def=1 cat="Phasor fix" unm="Scale"
+//! float eSize min=0 max=1 def=1 cat="Phasor fix" unm="Overlay scale"
 uniform float eSize;
 //! float eNorm min=0 max=1 cat="Phasor fix" unm="Intensity"
 uniform float eNorm;
