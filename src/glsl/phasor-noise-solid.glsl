@@ -38,7 +38,7 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
     {
         // Get a point properties
         vec4 td_point, td_extra;
-        pg_point4(pstate, td_point)
+        pg_point4(pstate, td_point);
         pg_point4(pstate, td_extra);
 
         // Orientation at current world position

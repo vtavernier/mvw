@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include "discovered_bindings.hpp"
 
 #include "log.hpp"

@@ -1,26 +1,31 @@
-#include <epoxy/gl.h>
+#include <shadertoy/backends/gx.hpp>
 
 #include "data_input.hpp"
 
-namespace gl = shadertoy::gl;
+using namespace shadertoy;
+namespace gx = shadertoy::backends::gx;
 
 data_input::data_input()
     : state(dis_gpu_dirty)
 {}
 
-void data_input::load_input() {
-    // nothing to do
+GLenum data_input::load_input() {
+    return dims[2] == 4 ?
+        GL_RGBA32F :
+        dims[2] == 3 ?
+        GL_RGB32F :
+        GL_R32F;
 }
 
 void data_input::reset_input() {
     // nothing to do
 }
 
-gl::texture *data_input::use_input() {
+gx::texture *data_input::use_input() {
     if (state != dis_gpu_uptodate) {
         // texture needs to be uploaded
         if (!tex_) {
-            tex_ = std::make_unique<gl::texture>(GL_TEXTURE_2D);
+            tex_ = backends::current()->make_texture(GL_TEXTURE_2D);
         }
 
         GLint internalFormat = dims[2] == 4 ?

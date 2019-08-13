@@ -23,7 +23,6 @@
 #include "options.hpp"
 
 using namespace shadertoy;
-using shadertoy::gl::gl_call;
 
 gl_state::gl_state(const frame_options &opt)
     : g_buffer_template_(std::make_shared<compiler::program_template>()) {
@@ -67,14 +66,14 @@ gl_state::chain_instance::chain_instance(
         [this](const auto &path) {
             if (this->opt.use_make) compile_shader_source(path);
         },
-        [this](const auto &_source) {});
+        [](const auto &_source) {});
 
     if (has_postprocess)
         opt.postprocess.invoke(
             [this](const auto &path) {
                 if (this->opt.use_make) compile_shader_source(path);
             },
-            [this](const auto &source) {});
+            [](const auto &source) {});
 
     // Parse uniforms from source
     parse_directives(opt.shader, false);
@@ -292,12 +291,13 @@ void gl_state::chain_instance::render(shadertoy::render_context &context,
 
     if (draw_wireframe) {
         // Copy the gl_buffer depth data onto the back left fb
-        gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
-        gl_call(glBindFramebuffer, GL_READ_FRAMEBUFFER,
-                GLuint(geometry_buffer->target_fbo()));
-        gl_call(glBlitFramebuffer, 0, 0, render_size.width, render_size.height,
-                window_width, 0, render_size.width + window_width,
-                render_size.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        backends::current()->bind_default_framebuffer(GL_DRAW_FRAMEBUFFER);
+        geometry_buffer->target_fbo().bind(GL_READ_FRAMEBUFFER);
+
+        // No libshadertoy wrapper yet
+        glBlitFramebuffer(0, 0, render_size.width, render_size.height,
+                          window_width, 0, render_size.width + window_width,
+                          render_size.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
         // Second call: render wireframe on top without post-processing
         geometry_chain.set_uniform("bWireframe", 1);
@@ -338,10 +338,10 @@ void gl_state::chain_instance::init(shadertoy::render_context &context) {
         // Set framerate uniforms
         set_uniform("iTimeDelta", 1.0f / 60.0f);
         set_uniform("iFrameRate", 60.0f);
-    } catch (shadertoy::gl::shader_compilation_error &ex) {
+    } catch (shadertoy::backends::gx::shader_compilation_error &ex) {
         error_status = "Failed to compile shader: " + ex.log();
         VLOG->error(error_status);
-    } catch (shadertoy::gl::program_link_error &ex) {
+    } catch (shadertoy::backends::gx::program_link_error &ex) {
         error_status = "Failed to link program: " + ex.log();
         VLOG->error(error_status);
     }

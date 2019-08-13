@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include <shadertoy.hpp>
 
 #include <regex>

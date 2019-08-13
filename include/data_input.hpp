@@ -4,7 +4,6 @@
 #include <array>
 #include <vector>
 
-#include <shadertoy/gl.hpp>
 #include <shadertoy/inputs/basic_input.hpp>
 
 enum data_input_state
@@ -26,12 +25,12 @@ struct data_input : public shadertoy::inputs::basic_input
     data_input &operator=(const data_input &) = delete;
 
   protected:
-    void load_input() override;
+    GLenum load_input() override;
     void reset_input() override;
-    shadertoy::gl::texture *use_input() override;
+    shadertoy::backends::gx::texture *use_input() override;
 
   private:
-    std::unique_ptr<shadertoy::gl::texture> tex_;
+    std::unique_ptr<shadertoy::backends::gx::texture> tex_;
 };
 
 #endif /* _DATA_INPUT_HPP_ */

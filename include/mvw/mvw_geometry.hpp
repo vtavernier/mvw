@@ -19,14 +19,16 @@ typedef std::variant<int> hint_value;
 class mvw_geometry : public shadertoy::geometry::basic_geometry {
     // Provide subclasses direct access to the geometry fields
     struct mvw_mesh {
-        shadertoy::gl::vertex_array vao;
-        shadertoy::gl::buffer vertices;
-        shadertoy::gl::buffer indices;
+        std::unique_ptr<shadertoy::backends::gx::vertex_array> vao;
+        std::unique_ptr<shadertoy::backends::gx::buffer> vertices;
+        std::unique_ptr<shadertoy::backends::gx::buffer> indices;
         size_t indices_size;
+
+        mvw_mesh();
     };
 
     /// Default VAO: actually unused
-    shadertoy::gl::vertex_array vao_;
+    std::unique_ptr<shadertoy::backends::gx::vertex_array> vao_;
 
     /// List of meshes to render
     std::vector<mvw_mesh> meshes_;
@@ -47,7 +49,7 @@ class mvw_geometry : public shadertoy::geometry::basic_geometry {
     void set_hint(const std::string &hint, hint_value value = 1);
 
    public:
-    inline const shadertoy::gl::vertex_array &vertex_array() const {
+    inline const std::unique_ptr<shadertoy::backends::gx::vertex_array> &vertex_array() const {
         return vao_;
     }
 

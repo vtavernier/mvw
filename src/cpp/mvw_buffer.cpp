@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include "mvw_buffer.hpp"
 
 using namespace shadertoy;

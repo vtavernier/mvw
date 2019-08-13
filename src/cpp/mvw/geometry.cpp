@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include "mvw/geometry.hpp"
 
 #include "mvw/test_geometry.hpp"

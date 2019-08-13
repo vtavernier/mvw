@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include <shadertoy.hpp>
+#include <shadertoy/backends/gl4.hpp>
 
 #include <numeric>
 
@@ -17,7 +18,6 @@
 
 #include "viewer_window.hpp"
 
-using shadertoy::gl::gl_call;
 using namespace shadertoy;
 
 void viewer_window::reload_shader() {
@@ -37,6 +37,11 @@ viewer_window::viewer_window(viewer_options &&opt)
     // Hide windows in headless mode
     if (opt_.headless_mode)
         glfwWindowHint(GLFW_VISIBLE, 0);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     window_ =
         glfwCreateWindow(opt_.frame.width + window_width, opt_.frame.height,
@@ -58,6 +63,8 @@ viewer_window::viewer_window(viewer_options &&opt)
     glfwSetCharCallback(window_, glfw_window_char_callback);
     glfwSetCursorPosCallback(window_, glfw_window_cursor_pos_callback);
     glfwSetScrollCallback(window_, glfw_window_scroll_callback);
+
+    backends::set_current(std::make_unique<backends::gl4::backend>());
 
     // Initialize ImGui
     IMGUI_CHECKVERSION();
@@ -120,11 +127,11 @@ void viewer_window::run() {
         glfwPollEvents();
 
         // Clear the default framebuffer (background for ImGui)
-        gl_call(glViewport, 0, 0, window_width, window_render_size_.height);
-        gl_call(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
-        gl_call(glClearColor, 0.0f, 0.0f, 0.0f, 1.0f);
-        gl_call(glClearDepth, 1.f);
-        gl_call(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        backends::current()->bind_default_framebuffer(GL_DRAW_FRAMEBUFFER);
+        backends::current()->set_viewport(0, 0, window_width, window_render_size_.height);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearDepth(1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Start ImGui frame
         ImGui_ImplOpenGL3_NewFrame();

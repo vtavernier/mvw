@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include <GLFW/glfw3.h>
 
 #include <cstdlib>
@@ -11,6 +9,7 @@
 #include "viewer_window.hpp"
 
 using namespace shadertoy;
+namespace gx = shadertoy::backends::gx;
 
 namespace po = boost::program_options;
 
@@ -108,10 +107,10 @@ int main(int argc, char *argv[]) {
     try {
         viewer_window window(std::move(opt));
         window.run();
-    } catch (gl::shader_compilation_error &sce) {
+    } catch (gx::shader_compilation_error &sce) {
         VLOG->critical("Failed to compile shader: {}", sce.log());
         code = 2;
-    } catch (gl::program_link_error &sce) {
+    } catch (gx::program_link_error &sce) {
         VLOG->critical("Failed to link program: {}", sce.log());
 
         code = 2;

@@ -1,12 +1,12 @@
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Create viewer library
-file(GLOB MVW_SOURCES ${SRC}/mvw/*.cpp)
+file(GLOB MVW_SOURCES ${SRC}/mvw/*.cpp ${INCLUDE_ROOT}/mvw/*.hpp)
 add_library(mvw ${MVW_SOURCES})
 
 target_include_directories(mvw PUBLIC ${INCLUDE_ROOT})
 target_include_directories(mvw PRIVATE ${Boost_INCLUDE_DIRS})
-target_link_libraries(mvw PUBLIC shadertoy-shared assimp)
+target_link_libraries(mvw PUBLIC shadertoy-shared stbackend-gl4-shared assimp)
 target_compile_options(mvw PRIVATE -Wall;-Werror=return-type)
 
 # Create viewer target

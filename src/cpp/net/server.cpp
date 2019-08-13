@@ -1,4 +1,3 @@
-#include <epoxy/gl.h>
 #include <msgpack.hpp>
 #include <zmq.hpp>
 
@@ -10,6 +9,8 @@
 
 #include "detail/rsize.hpp"
 #include "net/server.hpp"
+
+#include <shadertoy/backends/gl4/texture.hpp>
 
 using namespace net;
 using shadertoy::operator==; // for output_name_t
@@ -172,9 +173,9 @@ void server::handle_getframe(gl_state &gl_state, int revision, const std::string
 
     // Get texture parameters and format
     GLint width, height, internal_format;
-    texture->get_parameter(0, GL_TEXTURE_WIDTH, &width);
-    texture->get_parameter(0, GL_TEXTURE_HEIGHT, &height);
-    texture->get_parameter(0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+    texture->get_parameter(GL_TEXTURE_WIDTH, &width);
+    texture->get_parameter(GL_TEXTURE_HEIGHT, &height);
+    texture->get_parameter(GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
 
     // Status message
     net::getframe_reply result(true, std::map<std::string, int>{});
@@ -196,7 +197,8 @@ void server::handle_getframe(gl_state &gl_state, int revision, const std::string
     size_t sz = width * height * bytes_per_pixel;
     zmq::message_t data_msg(sz);
     // Read the image into the message buffer directly
-    texture->get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
+    reinterpret_cast<const shadertoy::backends::gl4::texture *>(texture)
+        ->get_image(0, GL_RGBA, GL_FLOAT, sz, data_msg.data());
     impl_->socket.send(data_msg);
 }
 

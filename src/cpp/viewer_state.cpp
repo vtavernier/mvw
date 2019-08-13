@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include "viewer_state.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>

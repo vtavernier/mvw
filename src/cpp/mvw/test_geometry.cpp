@@ -1,5 +1,3 @@
-#include <epoxy/gl.h>
-
 #include <fstream>
 #include <iostream>
 #include <sstream>
