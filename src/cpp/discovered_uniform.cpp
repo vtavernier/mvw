@@ -27,6 +27,7 @@ static const regex regex_varcat("\\bcat(?:egory)?=\"([^\"]+)\"", regex::ECMAScri
 static const regex regex_vardef("\\bdef(?:ault)?=(\\S+)", regex::ECMAScript);
 static const regex regex_varunm("\\b(?:unm|username|label)=\"([^\"]+)\"", regex::ECMAScript);
 static const regex regex_varmod("\\bmod(?:e)?=(\\S+)", regex::ECMAScript);
+static const regex regex_varbnd("\\bbind?=(\\S+)", regex::ECMAScript);
 
 template <typename Tvec>
 uniform_variant parse_variant1(const std::string &l) {
@@ -343,7 +344,7 @@ discovered_uniform::discovered_uniform(
     uniform_variant s_min, uniform_variant s_max, uniform_variant s_pow,
     uniform_variant s_def, const std::string &s_fmt, const std::string &s_cat,
     const std::string &s_name, const std::string &s_username,
-    uniform_mode s_mode)
+    const std::string &s_bind, uniform_mode s_mode)
     : value(s_def),
       s_min(s_min),
       s_max(s_max),
@@ -353,6 +354,7 @@ discovered_uniform::discovered_uniform(
       s_cat(s_cat),
       s_name(s_name),
       s_username(s_username),
+      s_bind(s_bind),
       s_mode(s_mode) {}
 
 bool discovered_uniform::render_imgui() {
@@ -376,60 +378,62 @@ discovered_uniform discovered_uniform::parse_spec(
     const std::string &l_fmt, const std::string &l_pow,
     const std::string &l_cat, const std::string &l_def,
     const std::string &l_name, const std::string &l_unm,
-    const std::string &type, const std::string &l_mode) {
+    const std::string &l_bind, const std::string &type,
+    const std::string &l_mode) {
 #define __UNIFORM_T1(T, ___min, ___max, ___fmt, ___pow, ___cat, ___def,       \
-                     ___name, ___unm, ___mod)                                 \
+                     ___name, ___unm, ___bnd, ___mod)                         \
     return discovered_uniform(                                                \
         parse_variant1<T>(___min), parse_variant1<T>(___max),                 \
         parse_variant1<T>(___pow), parse_variant1<T>(___def), ___fmt, ___cat, \
-        ___name, ___unm, parse_mode(___mod))
+        ___name, ___unm, ___bnd, parse_mode(___mod))
 #define __UNIFORM_TN(T, N, ___min, ___max, ___fmt, ___pow, ___cat, ___def,  \
-                     ___name, ___unm, ___mod)                               \
+                     ___name, ___unm, ___bnd, ___mod)                       \
     return discovered_uniform(parse_variantN<T##N COMMA N>(___min),         \
                               parse_variantN<T##N COMMA N>(___max),         \
                               parse_variantN<T##N COMMA N>(___pow),         \
                               parse_variantN<T##N COMMA N>(___def), ___fmt, \
-                              ___cat, ___name, ___unm, parse_mode(___mod))
+                              ___cat, ___name, ___unm, ___bnd,              \
+                              parse_mode(___mod))
 #define COMMA ,
 
     if (type == "float")
         __UNIFORM_T1(float, l_min, l_max, l_fmt, l_pow, l_cat, l_def, l_name,
-                     l_unm, l_mode);
+                     l_unm, l_bind, l_mode);
     if (type == "vec2")
         __UNIFORM_TN(glm::vec, 2, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
     if (type == "vec3")
         __UNIFORM_TN(glm::vec, 3, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
     if (type == "vec4")
         __UNIFORM_TN(glm::vec, 4, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
 
     if (type == "int")
         __UNIFORM_T1(int, l_min, l_max, l_fmt, l_pow, l_cat, l_def, l_name,
-                     l_unm, l_mode);
+                     l_unm, l_bind, l_mode);
     if (type == "ivec2")
         __UNIFORM_TN(glm::ivec, 2, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
     if (type == "ivec3")
         __UNIFORM_TN(glm::ivec, 3, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
     if (type == "ivec4")
         __UNIFORM_TN(glm::ivec, 4, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
 
     if (type == "bool")
         __UNIFORM_T1(bool, l_min, l_max, l_fmt, l_pow, l_cat, l_def, l_name,
-                     l_unm, l_mode);
+                     l_unm, l_bind, l_mode);
     if (type == "bvec2")
         __UNIFORM_TN(glm::bvec, 2, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
     if (type == "bvec3")
         __UNIFORM_TN(glm::bvec, 3, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
     if (type == "bvec4")
         __UNIFORM_TN(glm::bvec, 4, l_min, l_max, l_fmt, l_pow, l_cat, l_def,
-                     l_name, l_unm, l_mode);
+                     l_name, l_unm, l_bind, l_mode);
 
     throw std::runtime_error("invalid type");
 }
@@ -456,7 +460,7 @@ bool try_parse_uniform(const std::string &line,
         auto spec = match.str(3);
 
         std::smatch match_min, match_max, match_fmt, match_pow, match_cat,
-            match_def, match_unm, match_mod;
+            match_def, match_unm, match_mod, match_bnd;
         regex_search(spec, match_min, regex_varmin);
         regex_search(spec, match_max, regex_varmax);
         regex_search(spec, match_fmt, regex_varfmt);
@@ -465,6 +469,7 @@ bool try_parse_uniform(const std::string &line,
         regex_search(spec, match_def, regex_vardef);
         regex_search(spec, match_unm, regex_varunm);
         regex_search(spec, match_mod, regex_varmod);
+        regex_search(spec, match_bnd, regex_varbnd);
 
         VLOG->debug("Parsed uniform declaration for {} \"{}\" (type {})", name,
                     match_unm.size() > 1 ? match_unm.str(1) : "", type);
@@ -475,8 +480,11 @@ bool try_parse_uniform(const std::string &line,
             match_fmt.size() > 1 ? match_fmt.str(1) : default_fmt(type),
             match_pow.size() > 1 ? match_pow.str(1) : "1",
             match_cat.size() > 1 ? match_cat.str(1) : "",
-            match_def.size() > 1 ? match_def.str(1) : "", name,
-            match_unm.size() > 1 ? match_unm.str(1) : name, type,
+            match_def.size() > 1 ? match_def.str(1) : "",
+            name,
+            match_unm.size() > 1 ? match_unm.str(1) : name,
+            match_bnd.size() > 1 ? match_bnd.str(1) : "",
+            type,
             match_mod.size() > 1 ? match_mod.str(1) : "slider"));
 
         return true;

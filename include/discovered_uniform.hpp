@@ -35,6 +35,7 @@ struct discovered_uniform {
     std::string s_cat;
     std::string s_name;
     std::string s_username;
+    std::string s_bind;
 
     uniform_mode s_mode;
 
@@ -42,7 +43,7 @@ struct discovered_uniform {
                        uniform_variant s_pow, uniform_variant s_def,
                        const std::string &s_fmt, const std::string &s_cat,
                        const std::string &s_name, const std::string &s_username,
-                       uniform_mode s_mode);
+                       const std::string &s_bind, uniform_mode s_mode);
 
     template <typename T>
     void set_uniform(T && chain) {
@@ -58,10 +59,11 @@ struct discovered_uniform {
         const std::string &l_fmt, const std::string &l_pow,
         const std::string &l_cat, const std::string &l_def,
         const std::string &l_name, const std::string &l_unm,
-        const std::string &type, const std::string &l_mode);
+        const std::string &l_bind, const std::string &type,
+        const std::string &l_mode);
 
     MSGPACK_DEFINE_MAP(value, s_min, s_max, s_pow, s_def, s_fmt, s_cat, s_name,
-                       s_username, s_mode);
+                       s_username, s_bind, s_mode);
 };
 
 bool try_parse_uniform(const std::string &line,
