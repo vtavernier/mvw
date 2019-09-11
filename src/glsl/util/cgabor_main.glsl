@@ -1,6 +1,9 @@
 layout(location = 1) out vec4 fragLighting;
 layout(location = 2) out vec4 phasorField;
 
+//! float fRotate cat="Artifact fixes" unm="Rotate 90d" def=0
+uniform float fRotate;
+
 void mainImage(out vec4 O, in vec2 U)
 {
     // Initial return value
@@ -22,10 +25,12 @@ void mainImage(out vec4 O, in vec2 U)
         O *= 1. / sqrt(float(gSplats));
 
         // [0, 1] range for the noise value
-        O.rg = .5 * O.rg + .5;
+        //O.rg = .5 * (fRotate * O.rg + (1. - fRotate) * O.ba) + .5;
+        O.rg = .5 * ((fRotate * (1. - length(O.ba)) + (1. - fRotate)) * O.rg
+                   + (1. - length(O.rg)) * fRotate * O.ba) + .5;
 
         // Set phasorField value
-        phasorField = vec4(O.ba, 0., 1.);
+        phasorField = vec4(2. * O.rg - 1., 0., 1.);
 
         O.b = 0.;
 

@@ -43,6 +43,7 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
 
         // Orientation at current world position
         vec3 w0 = GETW0(gW0, .5 + .5 * td_extra.x);
+        vec3 w1 = GETW0(gW0 + vec2(M_PI, 0.), .5 + .5 * td_extra.x);
 
         // On a quad, don't offset points in the z direction
         if (dQuad) {
@@ -55,11 +56,12 @@ void cgaborCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3
         // Relative location computed by ch3
 
         // Compute contribution
-        O += ch3(P, td_point.xyz, 1.0, gF0, w0, _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
+        O += ch3(P, td_point.xyz, 1.0, gF0, w0, w1, _TILE_SIZE, M_PI * (2. * td_point.w - 1.));
     }
 
     vec2 w = (gW0 + vec2(eAngle, 0.));
-    O += eNorm * ch3(P, vec3(ePosition, 0.), 1.0, gF0, GETW0(w, 0.), eSize * _TILE_SIZE, 0.);
+    vec2 ww = (gW0 + vec2(eAngle, 0.) + vec2(M_PI/2., 0.));
+    O += eNorm * ch3(P, vec3(ePosition, 0.), 1.0, gF0, GETW0(w, 0.), GETW0(ww, 0.), eSize * _TILE_SIZE, 0.);
 }
 
 void cdebugCell(inout vec4 O, vec3 P, ivec3 ccell, ivec3 cell, vec3 center, vec3 n) {
