@@ -1,6 +1,7 @@
 #include <shadertoy.hpp>
 
 #include <regex>
+#include <sstream>
 
 #include "imgui.h"
 

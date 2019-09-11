@@ -18,7 +18,7 @@
 
 typedef std::map<std::string, std::shared_ptr<data_input>> input_map_t;
 
-class viewer_state;
+struct viewer_state;
 
 struct gl_state {
     /// Global rendering context for all possible chains

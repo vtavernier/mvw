@@ -19,6 +19,7 @@
 #include "viewer_window.hpp"
 
 using namespace shadertoy;
+namespace gx = shadertoy::backends::gx;
 
 void viewer_window::reload_shader() {
     // Reinitialize chain
@@ -27,9 +28,9 @@ void viewer_window::reload_shader() {
     need_render_ = true;
 }
 
-viewer_window::viewer_window(viewer_options &&opt)
+viewer_window::viewer_window(viewer_options opt)
     : server_{nullptr},
-      opt_{opt},
+      opt_{std::move(opt)},
       window_render_size_(opt_.frame.width, opt_.frame.height),
       viewed_revision_(0),
       need_render_(true) {
@@ -74,7 +75,7 @@ viewer_window::viewer_window(viewer_options &&opt)
 
     // Bind to Glfw+OpenGL3
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    ImGui_ImplOpenGL3_Init();
 
     // Set dark style
     ImGui::StyleColorsDark();

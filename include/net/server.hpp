@@ -5,8 +5,8 @@
 
 #include "options.hpp"
 
-class gl_state;
-class viewer_state;
+struct gl_state;
+struct viewer_state;
 
 #define CMD_NAME_GETFRAME "getframe"
 #define CMD_NAME_GETPARAMS "getparams"

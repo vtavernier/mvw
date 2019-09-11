@@ -39,12 +39,12 @@ gl_state::gl_state(const frame_options &opt)
     // Load customized shader templates
     g_buffer_template_->emplace(
         GL_VERTEX_SHADER,
-        compiler::shader_template::parse_file(SHADERS_BASE "/vertex.glsl"));
+        compiler::shader_template::parse_file(SHADERS_BASE "vertex.glsl"));
 
     // Same for fragment shader
     g_buffer_template_->emplace(
         GL_FRAGMENT_SHADER,
-        compiler::shader_template::parse_file(SHADERS_BASE "/fragment.glsl"));
+        compiler::shader_template::parse_file(SHADERS_BASE "fragment.glsl"));
 
     // Force compilation of new template
     g_buffer_template_->compile(GL_VERTEX_SHADER);
@@ -81,11 +81,16 @@ gl_state::chain_instance::chain_instance(
 
     // Create the geometry buffer
     geometry_buffer = std::make_shared<mvw_buffer>("geometry");
-    geometry_buffer->override_program(g_buffer_template);
 
     opt.shader.invoke(
-        [this](const auto &path) { geometry_buffer->source_file(path); },
-        [this](const auto &source) { geometry_buffer->source(source); });
+        [&](const auto &path) {
+            shadertoy::sources::set_source_file(
+                *geometry_buffer, g_buffer_template, GL_FRAGMENT_SHADER, path);
+        },
+        [&](const auto &source) {
+            shadertoy::sources::set_source(*geometry_buffer, g_buffer_template,
+                                           GL_FRAGMENT_SHADER, source);
+        });
 
     // Register inputs
     for (const auto &pair : inputs) {
@@ -131,8 +136,16 @@ gl_state::chain_instance::chain_instance(
             std::make_shared<buffers::toy_buffer>("postprocess");
 
         opt.postprocess.invoke(
-            [this](const auto &path) { postprocess_buffer->source_file(path); },
-            [this](const auto &source) { postprocess_buffer->source(source); });
+            [&](const auto &path) {
+                shadertoy::sources::set_source_file(*postprocess_buffer,
+                                                    context.buffer_template(),
+                                                    GL_FRAGMENT_SHADER, path);
+            },
+            [&](const auto &source) {
+                shadertoy::sources::set_source(*postprocess_buffer,
+                                               context.buffer_template(),
+                                               GL_FRAGMENT_SHADER, source);
+            });
 
         // Bind outputs according to the parsed definitions
         for (const auto &binding : buffer_bindings) {

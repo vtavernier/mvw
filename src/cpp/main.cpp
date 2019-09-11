@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <random>
+#include <sstream>
 
 #include <boost/program_options.hpp>
 
@@ -21,11 +22,11 @@ std::string default_bind_addr() {
     std::uniform_int_distribution<int32_t> dist(32768, 65535);
     return "tcp://127.0.0.1:" + std::to_string(dist(mt));
 #else
-    static const char rnd[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    static const char rnd[] =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     std::uniform_int_distribution<int32_t> dist(0, sizeof(rnd) - 1);
     char name[17];
-    for (size_t i = 0; i < sizeof(name) - 1; ++i)
-        name[i] = rnd[dist(mt)];
+    for (size_t i = 0; i < sizeof(name) - 1; ++i) name[i] = rnd[dist(mt)];
     name[sizeof(name) - 1] = '\0';
 
     std::stringstream ss;
@@ -98,8 +99,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Set log levels
-    auto level = opt.log.debug ? spdlog::level::debug :
-        (opt.log.verbose ? spdlog::level::info : spdlog::level::warn);
+    auto level = opt.log.debug ? spdlog::level::debug
+                               : (opt.log.verbose ? spdlog::level::info
+                                                  : spdlog::level::warn);
     utils::log::shadertoy()->set_level(level);
     VLOG->set_level(level);
 

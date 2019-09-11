@@ -34,4 +34,4 @@ target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
 set_target_properties(viewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 target_compile_definitions(viewer PUBLIC GLM_ENABLE_EXPERIMENTAL
-    SHADERS_BASE="${SHADERS_ROOT}")
+    SHADERS_BASE="${SHADERS_ROOT}/")

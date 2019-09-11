@@ -5,9 +5,7 @@
 #include <string>
 #include <vector>
 
-#ifndef __gl_h_
-#include <shadertoy/backends/gx/types.hpp>
-#endif
+#include <shadertoy/backends/gx/pre.hpp>
 #include <shadertoy/output_name.hpp>
 
 struct discovered_binding {

@@ -45,7 +45,7 @@ class viewer_window {
     void reload_shader();
 
   public:
-   viewer_window(viewer_options &&opt);
+   viewer_window(viewer_options opt);
    ~viewer_window();
 
    void run();
