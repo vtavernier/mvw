@@ -10,7 +10,9 @@
 #include "mvw/mvw_geometry.hpp"
 
 #include "gl_state.hpp"
+#ifndef __EMSCRIPTEN__
 #include "net/server.hpp"
+#endif
 
 #include "options.hpp"
 
@@ -18,7 +20,9 @@ class viewer_window {
     GLFWwindow *window_;
     std::unique_ptr<viewer_state> state_;
     std::unique_ptr<gl_state> gl_state_;
+#ifndef __EMSCRIPTEN__
     std::unique_ptr<net::server> server_;
+#endif
 
     viewer_options opt_;
 
@@ -27,6 +31,12 @@ class viewer_window {
     int viewed_revision_;
 
     bool need_render_;
+
+    double t = 0.;
+
+    std::vector<float> runtime_acc;
+    std::vector<float> runtime_p_acc;
+    int runtime_acc_idx = 0;
 
     static void glfw_window_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
     static void glfw_window_set_framebuffer_size(GLFWwindow *window, int width, int height);
@@ -49,6 +59,11 @@ class viewer_window {
    ~viewer_window();
 
    void run();
+   void main_loop();
+
+#if __EMSCRIPTEN__
+   static void run_opt(const viewer_options &opt);
+#endif
 };
 
 #endif /* _VIEWER_WINDOW_HPP_ */

@@ -7,7 +7,9 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#ifndef __EMSCRIPTEN__
 #include <msgpack.hpp>
+#endif
 
 typedef std::variant<float, glm::vec2, glm::vec3, glm::vec4, int, glm::ivec2,
                      glm::ivec3, glm::ivec4, bool, glm::bvec2, glm::bvec3,
@@ -22,7 +24,9 @@ enum uniform_mode {
     UM_INPUT = 2,
 };
 
+#ifndef __EMSCRIPTEN__
 MSGPACK_ADD_ENUM(uniform_mode);
+#endif
 
 struct discovered_uniform {
     uniform_variant value;
@@ -62,8 +66,10 @@ struct discovered_uniform {
         const std::string &l_bind, const std::string &type,
         const std::string &l_mode);
 
+#ifndef __EMSCRIPTEN__
     MSGPACK_DEFINE_MAP(value, s_min, s_max, s_pow, s_def, s_fmt, s_cat, s_name,
                        s_username, s_bind, s_mode);
+#endif
 };
 
 bool try_parse_uniform(const std::string &line,

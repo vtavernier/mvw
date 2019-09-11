@@ -1,4 +1,8 @@
+#ifndef __EMSCRIPTEN__
 #include <epoxy/gl.h>
+#else
+#include <GLES3/gl3.h>
+#endif
 
 #include <shadertoy.hpp>
 
@@ -126,9 +130,13 @@ gl_state::chain_instance::chain_instance(
     ws.enable(GL_DEPTH_TEST);
     ws.depth_func(GL_LEQUAL);
 
+#ifndef __EMSCRIPTEN__
+    //TODO: no polygon mode on GLES3
+
     // Smooth wireframes
     ws.enable(GL_LINE_SMOOTH);
     ws.polygon_mode(GL_LINE);
+#endif
 
     if (has_postprocess) {
         // Add the postprocess buffer

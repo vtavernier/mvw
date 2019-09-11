@@ -3,6 +3,7 @@
 
 #include <variant>
 
+#ifndef __EMSCRIPTEN__
 #include <msgpack.hpp>
 
 template <typename Stream>
@@ -320,6 +321,6 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     }  // namespace adaptor
 }  // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 }  // namespace msgpack
-
+#endif /* __EMSCRIPTEN__ */
 
 #endif /* _DETAIL_DISCOVERED_UNIFORM_HPP_ */

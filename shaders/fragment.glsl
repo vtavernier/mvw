@@ -1,5 +1,5 @@
 #pragma shadertoy part glsl:header begin
-#version 440
+#version 300 es
 #pragma shadertoy part end
 
 precision highp float;
@@ -23,10 +23,10 @@ uniform float iFrameRate;
 uniform float iChannelTime[4];
 uniform vec3 iChannelResolution[4];
 uniform vec4 iMouse;
-layout(binding = 0) uniform sampler2D iChannel0;
-layout(binding = 1) uniform sampler2D iChannel1;
-layout(binding = 2) uniform sampler2D iChannel2;
-layout(binding = 3) uniform sampler2D iChannel3;
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+uniform sampler2D iChannel2;
+uniform sampler2D iChannel3;
 uniform vec4 iDate;
 uniform float iSampleRate;
 

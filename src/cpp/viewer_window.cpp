@@ -1,9 +1,17 @@
+#ifndef __EMSCRIPTEN__
 #include <epoxy/gl.h>
+#else
+#include <GLES3/gl3.h>
+#endif
 
 #include <GLFW/glfw3.h>
 
 #include <shadertoy.hpp>
+#ifndef __EMSCRIPTEN__
 #include <shadertoy/backends/gl4.hpp>
+#else
+#include <shadertoy/backends/webgl.hpp>
+#endif
 
 #include <numeric>
 
@@ -28,9 +36,143 @@ void viewer_window::reload_shader() {
     need_render_ = true;
 }
 
+void viewer_window::main_loop() {
+    // Poll events
+    glfwPollEvents();
+
+    // Clear the default framebuffer (background for ImGui)
+    backends::current()->bind_default_framebuffer(GL_DRAW_FRAMEBUFFER);
+    backends::current()->set_viewport(0, 0, window_width, window_render_size_.height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearDepth(1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Start ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(
+            ImVec2(window_width, window_render_size_.height));
+    ImGui::Begin("mvw", NULL,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+    ImGui::Text("Camera settings");
+
+    need_render_ |= ImGui::InputFloat3("Location", &state_->camera_location.x);
+    need_render_ |= ImGui::InputFloat3("Target", &state_->camera_target.x);
+    need_render_ |= ImGui::InputFloat3("Up", &state_->camera_up.x);
+
+    need_render_ |= ImGui::InputFloat2("Rotation", &state_->user_rotate.x);
+    need_render_ |= ImGui::InputFloat("Scale", &state_->scale);
+
+    ImGui::Separator();
+
+    ImGui::Text("Render settings");
+
+    need_render_ |=
+        ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
+
+    if (ImGui::Button("Resize")) {
+        gl_state_->render_size = window_render_size_;
+        gl_state_->allocate_textures();
+
+        need_render_ = true;
+    }
+
+    bool previous_rotate = state_->rotate_camera;
+    ImGui::Checkbox("Rotate model", &state_->rotate_camera);
+    state_->update_rotation(previous_rotate);
+
+    need_render_ |=
+        ImGui::SliderInt("Revision", &viewed_revision_,
+                -(gl_state_->chains.size() - 1), 0, "%d");
+
+    ImGui::Separator();
+
+    need_render_ |= gl_state_->render_imgui(viewed_revision_);
+
+    ImGui::Text("Performance");
+
+    char label_buf[30];
+    char overlay_buf[30];
+
+    {
+        auto mean =
+            std::accumulate(runtime_acc.begin(), runtime_acc.end(), 0.0f) /
+            runtime_acc.size();
+        sprintf(label_buf, "N %2.3fms", runtime_acc[runtime_acc_idx]);
+        sprintf(overlay_buf, "a %2.3fms", mean);
+        ImGui::PlotHistogram(label_buf, runtime_acc.data(),
+                runtime_acc.size(), 0, overlay_buf);
+    }
+
+    if (gl_state_->has_postprocess(viewed_revision_)) {
+        auto mean = std::accumulate(runtime_p_acc.begin(),
+                runtime_p_acc.end(), 0.0f) /
+            runtime_acc.size();
+        sprintf(label_buf, "P %2.3fms", runtime_p_acc[runtime_acc_idx]);
+        sprintf(overlay_buf, "a %2.3fms", mean);
+        ImGui::PlotHistogram(label_buf, runtime_p_acc.data(),
+                runtime_p_acc.size(), 0, overlay_buf);
+    }
+
+    ImGui::Text("Status");
+
+    if (!gl_state_->chains.empty()) {
+        ImGui::Text("%s", gl_state_->chains.back()->error_status.c_str());
+    }
+
+    ImGui::End();
+
+    // Complete render
+    ImGui::Render();
+
+    // Update uniforms
+    gl_state_->update_uniforms(t, *state_);
+
+    // Note that if rotation is enabled we need to render every frame
+    need_render_ |= state_->rotate_camera;
+
+    // Render current revision
+    gl_state_->render(state_->draw_wireframe, viewed_revision_,
+            need_render_);
+
+    // We updated the rendering to the latest version
+    bool has_renderered = need_render_;
+    need_render_ = false;
+
+#ifndef __EMSCRIPTEN__
+        // Poll server instance for requests
+        if (server_) {
+            need_render_ |=
+                server_->poll(*state_, *gl_state_, viewed_revision_);
+        }
+#endif
+
+        // Render ImGui overlay
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // Buffer swapping
+        glfwSwapBuffers(window_);
+
+        if (has_renderered) {
+            // Measure time
+            float ts[2];
+            gl_state_->get_render_ms(ts, viewed_revision_);
+            runtime_acc[(runtime_acc_idx = (runtime_acc_idx + 1) %
+                                           runtime_acc.size())] = ts[0];
+            runtime_p_acc[runtime_acc_idx] = ts[1];
+        }
+
+        // Update time and framecount
+        t = glfwGetTime();
+        state_->frame_count++;
+}
+
 viewer_window::viewer_window(viewer_options opt)
-    : server_{nullptr},
-      opt_{std::move(opt)},
+    : opt_{std::move(opt)},
       window_render_size_(opt_.frame.width, opt_.frame.height),
       viewed_revision_(0),
       need_render_(true) {
@@ -39,11 +181,16 @@ viewer_window::viewer_window(viewer_options opt)
     if (opt_.headless_mode)
         glfwWindowHint(GLFW_VISIBLE, 0);
 
+#ifndef __EMSCRIPTEN__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#endif
 
+    std::cerr << opt_.frame.width << "x" << opt_.frame.height << std::endl;
     window_ =
         glfwCreateWindow(opt_.frame.width + window_width, opt_.frame.height,
                          "Test model viewer", nullptr, nullptr);
@@ -65,7 +212,11 @@ viewer_window::viewer_window(viewer_options opt)
     glfwSetCursorPosCallback(window_, glfw_window_cursor_pos_callback);
     glfwSetScrollCallback(window_, glfw_window_scroll_callback);
 
+#ifndef __EMSCRIPTEN__
     backends::set_current(std::make_unique<backends::gl4::backend>());
+#else
+    backends::set_current(std::make_unique<backends::webgl::backend>());
+#endif
 
     // Initialize ImGui
     IMGUI_CHECKVERSION();
@@ -97,9 +248,11 @@ viewer_window::viewer_window(viewer_options opt)
     state_->center = gl_state_->center;
     state_->scale = gl_state_->scale;
 
+#ifndef __EMSCRIPTEN__
     // Start server
     if (!opt_.server.bind_addr.empty())
         server_ = std::make_unique<net::server>(opt_.server, opt_.log);
+#endif
 }
 
 viewer_window::~viewer_window() {
@@ -115,146 +268,26 @@ viewer_window::~viewer_window() {
     }
 }
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void render_loop();
+#endif
+
 void viewer_window::run() {
     // Rendering time
-    double t = 0.;
+    t = 0.;
 
-    std::vector<float> runtime_acc(60, 0.0f);
-    std::vector<float> runtime_p_acc(60, 0.0f);
-    int runtime_acc_idx = 0;
+    runtime_acc = {60, 0.0f};
+    runtime_p_acc = {60, 0.0f};
+    runtime_acc_idx = 0;
 
+#ifndef __EMSCRIPTEN__
     while (!glfwWindowShouldClose(window_)) {
-        // Poll events
-        glfwPollEvents();
-
-        // Clear the default framebuffer (background for ImGui)
-        backends::current()->bind_default_framebuffer(GL_DRAW_FRAMEBUFFER);
-        backends::current()->set_viewport(0, 0, window_width, window_render_size_.height);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClearDepth(1.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Start ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::SetNextWindowPos(ImVec2(0, 0));
-        ImGui::SetNextWindowSize(
-            ImVec2(window_width, window_render_size_.height));
-        ImGui::Begin("mvw", NULL,
-                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-        ImGui::Text("Camera settings");
-
-        need_render_ |= ImGui::InputFloat3("Location", &state_->camera_location.x);
-        need_render_ |= ImGui::InputFloat3("Target", &state_->camera_target.x);
-        need_render_ |= ImGui::InputFloat3("Up", &state_->camera_up.x);
-
-        need_render_ |= ImGui::InputFloat2("Rotation", &state_->user_rotate.x);
-        need_render_ |= ImGui::InputFloat("Scale", &state_->scale);
-
-        ImGui::Separator();
-
-        ImGui::Text("Render settings");
-
-        need_render_ |=
-            ImGui::Checkbox("Show wireframe", &state_->draw_wireframe);
-
-        if (ImGui::Button("Resize")) {
-            gl_state_->render_size = window_render_size_;
-            gl_state_->allocate_textures();
-
-            need_render_ = true;
-        }
-
-        bool previous_rotate = state_->rotate_camera;
-        ImGui::Checkbox("Rotate model", &state_->rotate_camera);
-        state_->update_rotation(previous_rotate);
-
-        need_render_ |=
-            ImGui::SliderInt("Revision", &viewed_revision_,
-                             -(gl_state_->chains.size() - 1), 0, "%d");
-
-        ImGui::Separator();
-
-        need_render_ |= gl_state_->render_imgui(viewed_revision_);
-
-        ImGui::Text("Performance");
-
-        char label_buf[30];
-        char overlay_buf[30];
-
-        {
-            auto mean =
-                std::accumulate(runtime_acc.begin(), runtime_acc.end(), 0.0f) /
-                runtime_acc.size();
-            sprintf(label_buf, "N %2.3fms", runtime_acc[runtime_acc_idx]);
-            sprintf(overlay_buf, "a %2.3fms", mean);
-            ImGui::PlotHistogram(label_buf, runtime_acc.data(),
-                                 runtime_acc.size(), 0, overlay_buf);
-        }
-
-        if (gl_state_->has_postprocess(viewed_revision_)) {
-            auto mean = std::accumulate(runtime_p_acc.begin(),
-                                        runtime_p_acc.end(), 0.0f) /
-                        runtime_acc.size();
-            sprintf(label_buf, "P %2.3fms", runtime_p_acc[runtime_acc_idx]);
-            sprintf(overlay_buf, "a %2.3fms", mean);
-            ImGui::PlotHistogram(label_buf, runtime_p_acc.data(),
-                                 runtime_p_acc.size(), 0, overlay_buf);
-        }
-
-        ImGui::Text("Status");
-
-        if (!gl_state_->chains.empty()) {
-            ImGui::Text("%s", gl_state_->chains.back()->error_status.c_str());
-        }
-
-        ImGui::End();
-
-        // Complete render
-        ImGui::Render();
-
-        // Update uniforms
-        gl_state_->update_uniforms(t, *state_);
-
-        // Note that if rotation is enabled we need to render every frame
-        need_render_ |= state_->rotate_camera;
-
-        // Render current revision
-        gl_state_->render(state_->draw_wireframe, viewed_revision_,
-                          need_render_);
-
-        // We updated the rendering to the latest version
-        bool has_renderered = need_render_;
-        need_render_ = false;
-
-        // Poll server instance for requests
-        if (server_) {
-            need_render_ |=
-                server_->poll(*state_, *gl_state_, viewed_revision_);
-        }
-
-        // Render ImGui overlay
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        // Buffer swapping
-        glfwSwapBuffers(window_);
-
-        if (has_renderered) {
-            // Measure time
-            float ts[2];
-            gl_state_->get_render_ms(ts, viewed_revision_);
-            runtime_acc[(runtime_acc_idx = (runtime_acc_idx + 1) %
-                                           runtime_acc.size())] = ts[0];
-            runtime_p_acc[runtime_acc_idx] = ts[1];
-        }
-
-        // Update time and framecount
-        t = glfwGetTime();
-        state_->frame_count++;
+        main_loop();
     }
+#else
+    emscripten_set_main_loop(render_loop, 0, 0);
+#endif
 }
 
 void viewer_window::glfw_mouse_button_callback(int button, int action,
@@ -371,3 +404,37 @@ void viewer_window::glfw_window_scroll_callback(GLFWwindow *window,
         ->glfw_scroll_callback(xoffset, yoffset);
 }
 
+#if __EMSCRIPTEN__
+std::unique_ptr<viewer_window> current_window;
+
+void render_loop()
+{
+    try {
+        current_window->main_loop();
+    } catch (gx::shader_compilation_error &sce) {
+        VLOG->critical("Failed to compile shader: {}", sce.log());
+    } catch (gx::program_link_error &sce) {
+        VLOG->critical("Failed to link program: {}", sce.log());
+    } catch (shadertoy_error &err) {
+        VLOG->critical("GL error: {}", err.what());
+    } catch (std::runtime_error &ex) {
+        VLOG->critical("Generic error: {}", ex.what());
+    }
+}
+
+void viewer_window::run_opt(const viewer_options &opt)
+{
+    try {
+        current_window = std::make_unique<viewer_window>(opt);
+        current_window->run();
+    } catch (gx::shader_compilation_error &sce) {
+        VLOG->critical("Failed to compile shader: {}", sce.log());
+    } catch (gx::program_link_error &sce) {
+        VLOG->critical("Failed to link program: {}", sce.log());
+    } catch (shadertoy_error &err) {
+        VLOG->critical("GL error: {}", err.what());
+    } catch (std::runtime_error &ex) {
+        VLOG->critical("Generic error: {}", ex.what());
+    }
+}
+#endif

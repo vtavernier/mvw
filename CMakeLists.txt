@@ -21,14 +21,20 @@ find_package(Threads REQUIRED)
 
 # OpenGL libraries
 set(OpenGL_GL_PREFERENCE GLVND CACHE STRING "OpenGL preference" FORCE)
-find_package(Epoxy REQUIRED)
-find_package(Glfw3 REQUIRED)
+if(NOT EMSCRIPTEN)
+    find_package(Epoxy REQUIRED)
+    find_package(Glfw3 REQUIRED)
+endif()
 
 # Boost
-find_package(Boost 1.58 REQUIRED COMPONENTS program_options)
+if(NOT EMSCRIPTEN)
+    find_package(Boost 1.58 REQUIRED COMPONENTS program_options)
+endif()
 
 # Remoting using ZMQ
-find_package(ZeroMQ REQUIRED)
+if(NOT EMSCRIPTEN)
+    find_package(ZeroMQ REQUIRED)
+endif()
 
 # libshadertoy
 add_subdirectory(libshadertoy)
@@ -68,16 +74,22 @@ foreach(IMGUI_FILE ${IMGUI_FILES})
     list(APPEND IMGUI_SOURCES ${IMGUI_BUILD_DIRECTORY}/${IMGUI_FILE_BASENAME})
 endforeach()
 add_library(imgui STATIC ${IMGUI_SOURCES})
-target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
+if(NOT EMSCRIPTEN)
+    target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
+else()
+    target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3)
+endif()
 target_include_directories(imgui PUBLIC ${IMGUI_BUILD_DIRECTORY})
 
 # msgpack
-set(MSGPACK_CXX11 ON CACHE BOOL "")
-set(MSGPACK_BOOST ON CACHE BOOL "")
-set(MSGPACK_BUILD_EXAMPLES OFF CACHE BOOL "")
-set(MSGPACK_BUILD_TESTS OFF CACHE BOOL "")
-set(MSGPACK_ENABLE_CXX ON CACHE BOOL "")
-add_subdirectory(msgpack-c EXCLUDE_FROM_ALL)
+if(NOT EMSCRIPTEN)
+    set(MSGPACK_CXX11 ON CACHE BOOL "")
+    set(MSGPACK_BOOST ON CACHE BOOL "")
+    set(MSGPACK_BUILD_EXAMPLES OFF CACHE BOOL "")
+    set(MSGPACK_BUILD_TESTS OFF CACHE BOOL "")
+    set(MSGPACK_ENABLE_CXX ON CACHE BOOL "")
+    add_subdirectory(msgpack-c EXCLUDE_FROM_ALL)
+endif()
 
 # Directories
 set(INCLUDE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -5,14 +5,15 @@
 #include <random>
 #include <sstream>
 
+#ifndef __EMSCRIPTEN__
 #include <boost/program_options.hpp>
+namespace po = boost::program_options;
+#endif
 
 #include "viewer_window.hpp"
 
 using namespace shadertoy;
 namespace gx = shadertoy::backends::gx;
-
-namespace po = boost::program_options;
 
 std::string default_bind_addr() {
     std::random_device rd;
@@ -36,6 +37,7 @@ std::string default_bind_addr() {
 #endif /* _WIN32 */
 }
 
+#ifndef __EMSCRIPTEN__
 int main(int argc, char *argv[]) {
     int code = 0;
 
@@ -127,3 +129,55 @@ int main(int argc, char *argv[]) {
     glfwTerminate();
     return code;
 }
+#else
+#include <emscripten.h>
+#include <emscripten/bind.h>
+
+using namespace emscripten;
+
+int main(int argc, char *argv[]) {
+    // Initialize logger
+    spdlog::stderr_color_st(VLOG_NAME);
+
+    if (!glfwInit()) {
+        VLOG->critical("Failed to initialize glfw");
+        return 2;
+    }
+
+    return 0;
+}
+
+void run_viewer(const viewer_options &opt) {
+    // Set log levels
+    auto level = spdlog::level::debug;
+    utils::log::shadertoy()->set_level(level);
+    VLOG->set_level(level);
+
+    viewer_window::run_opt(opt);
+}
+
+EMSCRIPTEN_BINDINGS(viewer) {
+    value_object<viewer_options>("ViewerOptions")
+        .field("program", &viewer_options::program)
+        .field("geometry", &viewer_options::geometry)
+        .field("frame", &viewer_options::frame);
+
+    function("start", &run_viewer);
+
+    value_object<shader_program_options>("ShaderProgramOptions")
+        .field("shader", &shader_program_options::shader)
+        .field("postprocess", &shader_program_options::postprocess);
+
+    value_object<shader_file_program>("ShaderFileProgram")
+        .field("path", &shader_file_program::path)
+        .field("source", &shader_file_program::source);
+
+    value_object<geometry_options>("GeometryOptions")
+        .field("path", &geometry_options::path)
+        .field("nff_source", &geometry_options::nff_source);
+
+    value_object<frame_options>("FrameOptions")
+        .field("width", &frame_options::width)
+        .field("height", &frame_options::height);
+}
+#endif
