@@ -6,6 +6,11 @@ based on sparse convolution (namely, Gabor noise and Phasor noise).
 
 This is only an archive and is not developed actively anymore.
 
+![Preview](screenshot1.png)
+
+    cd build
+    ./viewer -s glsl/phasor-noise-solid.glsl -p glsl/pp-phasor.glsl -g ../bunny.obj
+
 ## Building
 
 1. Install system-level dependencies:
