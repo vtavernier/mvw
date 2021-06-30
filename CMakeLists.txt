@@ -22,7 +22,11 @@ find_package(Threads REQUIRED)
 # OpenGL libraries
 set(OpenGL_GL_PREFERENCE GLVND CACHE STRING "OpenGL preference" FORCE)
 find_package(Epoxy REQUIRED)
-find_package(Glfw3 REQUIRED)
+
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TESTS OFF)
+set(GLFW_BUILD_DOCS OFF)
+add_subdirectory(glfw)
 
 # Boost
 find_package(Boost 1.58 REQUIRED COMPONENTS program_options)
@@ -69,7 +73,7 @@ foreach(IMGUI_FILE ${IMGUI_FILES})
 endforeach()
 add_library(imgui STATIC ${IMGUI_SOURCES})
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
-target_include_directories(imgui PUBLIC ${IMGUI_BUILD_DIRECTORY})
+target_include_directories(imgui PUBLIC ${IMGUI_BUILD_DIRECTORY} glfw/include)
 
 # msgpack
 set(MSGPACK_CXX11 ON CACHE BOOL "")

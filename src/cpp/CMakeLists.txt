@@ -22,13 +22,14 @@ target_include_directories(viewer PRIVATE
 target_link_libraries(viewer PRIVATE
     mvw
     imgui
-    ${Glfw3_LIBRARY}
+    glfw
     ${CMAKE_THREAD_LIBS_INIT}
     ${Boost_LIBRARIES}
     ${ZeroMQ_LIBRARIES}
     msgpackc-cxx)
 
 target_compile_options(viewer PRIVATE -Wall;-Werror=return-type)
+target_compile_definitions(viewer PRIVATE GLM_ENABLE_EXPERIMENTAL)
 
 # Output into main folder
 set_target_properties(viewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")

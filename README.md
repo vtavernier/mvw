@@ -1,7 +1,7 @@
 # 3D test model viewer
 
 This repository contains a sample program showing how to load various 3D model formats and
-how to render them using [libshadertoy](https://gitlab.inria.fr/vtaverni/libshadertoy).
+how to render them using [libshadertoy](https://github.com/vtavernier/libshadertoy).
 
 ## Dependencies
 
@@ -32,4 +32,3 @@ make -j$(nproc)
 ## Author
 
 * Viewer code: Vincent Tavernier <vincent.tavernier@inria.fr>
-* Models: [test-models](https://gitlab.inria.fr/vtaverni/test-models)

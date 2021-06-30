@@ -1,9 +1,6 @@
 [submodule "libshadertoy"]
 	path = libshadertoy
 	url = https://github.com/vtavernier/libshadertoy.git
-[submodule "models"]
-	path = models
-	url = ../../vtaverni/test-models.git
 [submodule "assimp"]
 	path = assimp
 	url = https://github.com/assimp/assimp.git
@@ -16,3 +13,6 @@
 [submodule "colormap-shaders"]
 	path = colormap-shaders
 	url = https://github.com/kbinani/colormap-shaders.git
+[submodule "glfw"]
+	path = glfw
+	url = https://github.com/glfw/glfw.git
